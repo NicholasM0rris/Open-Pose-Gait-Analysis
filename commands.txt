@@ -1,0 +1,10 @@
+To run basic openpose demo
+bin\OpenPoseDemo.exe --video examples\test.avi --face --hand --write_json output/ --write_video output_video/test.avi --write_images --write_images_format png
+
+
+
+
+
+
+DEFINE_string(write_images,             "",             "Directory to write rendered frames in `write_images_format` image format.");
+DEFINE_string(write_images_format,      "png",
