@@ -1,3 +1,4 @@
+import os
 import sys
 import glob
 import json
@@ -46,14 +47,16 @@ class ExtractData():
 
     def __init__(self):
         self.cheese = 1
-        self.path_to_data = ""
+        self.path_to_input = "input_images"
         self.video_dimensions = ""
         self.data_files = []
+        self.input_files = []
         self.path = "output"
         self.key_points = defaultdict(list)
 
         self.get_data_files()
         self.get_data_frames()
+        self.extract_frames()
 
     def print_keypoints(self, key_point=None):
         """
@@ -88,10 +91,9 @@ class ExtractData():
                 self.key_points[key].append(
                     temp_df['people'][0]['pose_keypoints_2d'][key_points[key] * 3:key_points[key] * 3 + 3])
 
-    def extract_frame(self, sec=0):
+    def extract_video_frame(self, sec=0):
         if args['video']:
             vidcap = cv2.VideoCapture(args['video'])
-
 
         else:
             vidcap = cv2.VideoCapture("output_video\\result.avi")
@@ -102,6 +104,12 @@ class ExtractData():
             print("Error reading file")
             sys.exit(1)
         return frame
+
+    def extract_frames(self):
+        for filename in glob.glob("{}\\*.png".format(self.path_to_input)):
+            self.input_files.append(filename)
+
+
 
 
 
@@ -123,7 +131,7 @@ class DisplayData():
 
 def save_frame(frame):
     time_stamp = datetime.now()
-    filename = "{}.png".format(time_stamp.strftime("%Y-%m-%d_%H-%M-%S"))
+    filename = "{}.png".format(time_stamp.strftime("%Y-%m-%d_%H-%M-%S-%f"))
     path = "output_images\\{}".format(filename)
     cv2.imwrite(path, frame)
 
@@ -168,13 +176,36 @@ def get_distance(point1, point2):
     return dist
 
 
+def distance_overlay(display, point1, point2):
+    # Remove any current images in output file
+    files = glob.glob("{}\\*.png".format("output_images"))
+    for f in files:
+        os.remove(f)
+    # Add overlay
+    for idx, path in enumerate(display.data.input_files):
+        frame = cv2.imread(path)
+        frame = add_points_to_image(frame, [display.fp(point1, idx), display.fp(point2, idx)])
+        frame = add_line_between_points(frame, [display.fp(point1, idx), display.fp(point2, idx)])
+        save_frame(frame)
+    save_video()
+
+def save_video():
+    images = []
+    for filename in glob.glob("{}\\*.png".format("output_images")):
+        images.append(filename)
+    frame = cv2.imread(images[0])
+    height, width, layers = frame.shape
+    video = cv2.VideoWriter("{}/Output.avi".format("processed_video"), 0, 1, (width,height))
+    for image in images:
+        video.write(cv2.imread(image))
+    cv2.destroyAllWindows()
+    video.release()
+
+
 def main(argv=None):
     data = ExtractData()
     display = DisplayData(data)
-    frame = data.extract_frame()
-    frame = add_points_to_image(frame, [display.fp("RBigToe", 0), display.fp("LBigToe", 0)])
-    frame = add_line_between_points(frame, [display.fp("RBigToe", 0), display.fp("LBigToe", 0)])
-    save_frame(frame)
+    distance_overlay(display, "RBigToe", "LBigToe")
 
 
 if __name__ == '__main__':
