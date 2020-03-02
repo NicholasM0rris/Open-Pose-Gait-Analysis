@@ -7,6 +7,9 @@ import cv2
 import numpy as np
 from collections import defaultdict
 import argparse
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import *
 
 ap = argparse.ArgumentParser()
 ap.add_argument('-i', '--image', required=False, help='Add image')
@@ -110,14 +113,12 @@ class ExtractData():
             self.input_files.append(filename)
 
 
-
-
-
-
 class DisplayData():
 
     def __init__(self, data):
         self.data = data
+        self.keypoint1 = "LBigToe"
+        self.keypoint2 = "RBigToe"
 
     def fp(self, keypoint, frame_index):
         """
@@ -128,8 +129,121 @@ class DisplayData():
         """
         return self.data.key_points[keypoint][frame_index][:-1]
 
+    def distance_overlay(self):
+        """
+        Creates overlay for distance
+        :param display:
+        :param point1:
+        :param point2:
+        :return:
+        """
+        # Remove any current images in output file
+        files = glob.glob("{}\\*.png".format("output_images"))
+        for f in files:
+            os.remove(f)
+        # Add overlay
+        for idx, path in enumerate(self.data.input_files):
+            frame = cv2.imread(path)
+            frame = add_points_to_image(frame, [self.fp(self.keypoint1, idx), self.fp(self.keypoint2, idx)])
+            frame = add_line_between_points(frame, [self.fp(self.keypoint1, idx), self.fp(self.keypoint2, idx)])
+            save_frame(frame)
+        save_video()
+
+
+class GUI(QMainWindow):
+    def __init__(self, display):
+        super(GUI, self).__init__()
+        self.wid = QWidget(self)
+        self.setCentralWidget(self.wid)
+        self.grid = QGridLayout()
+        self.palette = QPalette()
+        self.palette.setColor(QPalette.Button, Qt.blue)
+        self.palette.setColor(QPalette.ButtonText, Qt.white)
+        self.setPalette(self.palette)
+        self.setGeometry(50, 50, 500, 500)
+        self.setWindowTitle("Super cool Alpha ver.")
+        self.display = display
+        #self.app = QApplication([])
+        QApplication.setStyle(QStyleFactory.create("Fusion"))
+
+        #self.window = QWidget(parent=self)
+        #self.layout = QBoxLayout(QBoxLayout.LeftToRight, self.window)
+
+        self.gif()
+
+        self.start_Button()
+
+        self.dropdown()
+
+        #self.window.setLayout(self.layout)
+        #self.window.show()
+        self.wid.setLayout(self.grid)
+        self.show()
+
+    def gif(self):
+
+        self.movie_label = QLabel()
+
+        self.movie = QMovie("support/skeleton_gif.gif")
+        self.movie_label.setMovie(self.movie)
+
+        self.movie.start()
+        self.grid.addWidget(self.movie_label, 0, 3)
+
+    def start_Button(self):
+
+        self.start_button = QPushButton('Start', self)
+        self.start_button.clicked.connect(self.display.distance_overlay)
+        self.grid.addWidget(self.start_button, 3, 6)
+        #self.start_button.move(300, 400)
+        #self.layout.addWidget(self.start_button)
+
+    def dropdown(self):
+        self.first_label = QLabel("First point", self)
+        self.second_label = QLabel("Second point", self)
+        self.second_label.setAlignment(Qt.AlignBottom)
+        self.first_label.setAlignment(Qt.AlignBottom)
+        self.grid.addWidget(self.first_label, 2,3)
+        self.grid.addWidget(self.second_label, 2, 0)
+
+        #self.first_label.move(50, 220)
+        #self.second_label.move(300, 220)
+        dropdown1 = QComboBox(self)
+        dropdown1.addItem("LBigToe")
+        dropdown1.addItem("LWrist")
+        dropdown1.addItem("LElbow")
+        self.grid.addWidget(dropdown1, 3, 3)
+        #dropdown1.move(50, 250)
+        #self.layout.addWidget(dropdown1)
+        dropdown1.activated[str].connect(self.set_dropdown1)
+
+        dropdown2 = QComboBox(self)
+        dropdown2.addItem("RBigToe")
+        dropdown2.addItem("RWrist")
+        dropdown2.addItem("RElbow")
+        #dropdown2.move(300, 250)
+        self.grid.addWidget(dropdown2, 3, 0)
+        dropdown2.activated[str].connect(self.set_dropdown2)
+
+    def set_dropdown1(self, text):
+        self.display.keypoint1 = text
+        print(self.display.keypoint1)
+
+    def set_dropdown2(self, text):
+        self.display.keypoint2 = text
+        print(self.display.keypoint2)
+
+
+
+
+
 
 def save_frame(frame):
+    """
+    Save a frame to output_images
+    :param frame:
+    :return:
+    """
     time_stamp = datetime.now()
     filename = "{}.png".format(time_stamp.strftime("%Y-%m-%d_%H-%M-%S-%f"))
     path = "output_images\\{}".format(filename)
@@ -137,6 +251,12 @@ def save_frame(frame):
 
 
 def add_line_between_points(frame, points):
+    """
+    Adds a line overlay between two points and puts pixel distance text
+    :param frame:
+    :param points:
+    :return:
+    """
     point1 = list(map(int, points[0]))
     point2 = list(map(int, points[1]))
     cv2.line(frame, tuple(point1), tuple(point2), (0, 255, 0), thickness=3, lineType=8)
@@ -177,6 +297,13 @@ def get_distance(point1, point2):
 
 
 def distance_overlay(display, point1, point2):
+    """
+    Creates overlay for distance
+    :param display:
+    :param point1:
+    :param point2:
+    :return:
+    """
     # Remove any current images in output file
     files = glob.glob("{}\\*.png".format("output_images"))
     for f in files:
@@ -189,13 +316,18 @@ def distance_overlay(display, point1, point2):
         save_frame(frame)
     save_video()
 
+
 def save_video():
+    """
+    Saves a video of processed image output to processed_video directory
+    :return:
+    """
     images = []
     for filename in glob.glob("{}\\*.png".format("output_images")):
         images.append(filename)
     frame = cv2.imread(images[0])
     height, width, layers = frame.shape
-    video = cv2.VideoWriter("{}/Output.avi".format("processed_video"), 0, 1, (width,height))
+    video = cv2.VideoWriter("{}/Output.avi".format("processed_video"), 0, 1, (width, height))
     for image in images:
         video.write(cv2.imread(image))
     cv2.destroyAllWindows()
@@ -205,7 +337,11 @@ def save_video():
 def main(argv=None):
     data = ExtractData()
     display = DisplayData(data)
-    distance_overlay(display, "RBigToe", "LBigToe")
+    # distance_overlay(display, "RBigToe", "LBigToe")
+    # display.distance_overlay()
+    app = QApplication([])
+    gui = GUI(display)
+    app.exec_()
 
 
 if __name__ == '__main__':
