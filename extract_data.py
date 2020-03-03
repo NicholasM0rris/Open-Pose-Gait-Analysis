@@ -8,8 +8,9 @@ import numpy as np
 from collections import defaultdict
 import argparse
 from PyQt5.QtWidgets import *
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QThread
 from PyQt5.QtGui import *
+import time
 
 ap = argparse.ArgumentParser()
 ap.add_argument('-i', '--image', required=False, help='Add image')
@@ -46,7 +47,7 @@ key_points = {
 }
 
 
-class ExtractData():
+class ExtractData:
 
     def __init__(self):
         self.cheese = 1
@@ -113,12 +114,29 @@ class ExtractData():
             self.input_files.append(filename)
 
 
-class DisplayData():
+class DisplayData:
 
     def __init__(self, data):
         self.data = data
         self.keypoint1 = "LBigToe"
         self.keypoint2 = "RBigToe"
+        self.gui = None
+        self.distances = []
+        self.num_distances = []
+        self.frame_number = 1
+
+    def save_text(self, alist):
+        """
+        Saves a test file containing the log
+        :return:
+        """
+
+        time_stamp = datetime.now()
+        filename = str("metrics/log_{}.txt".format(time_stamp.strftime("%Y-%m-%d_%H-%M-%S")))
+        f = open(filename, "w+")
+        for something in alist:
+            f.write("%s\n" % something)
+        f.close()
 
     def fp(self, keypoint, frame_index):
         """
@@ -129,12 +147,45 @@ class DisplayData():
         """
         return self.data.key_points[keypoint][frame_index][:-1]
 
+    def add_points_to_image(self, frame, keypoints):
+        """
+        Overlay points to an image
+        :param frame: Image/frame for points to be overlayed (from extract_frame) in red
+        :param keypoints: list of keypoint coordinates to overlay
+        :return: writes frame to output_images
+        """
+        self.distances.append("Distance from {} to {}".format(self.keypoint1, self.keypoint2))
+        for keypoint in keypoints:
+            cv2.circle(frame, (int(keypoint[0]), int(keypoint[1])), 10, (0, 0, 255), -1)
+        return frame
+
+    def add_line_between_points(self, frame, points):
+        """
+        Adds a line overlay between two points and puts pixel distance text
+        :param frame:
+        :param points:
+        :return:
+        """
+        point1 = list(map(int, points[0]))
+        point2 = list(map(int, points[1]))
+        cv2.line(frame, tuple(point1), tuple(point2), (0, 255, 0), thickness=3, lineType=8)
+        org = tuple(point1)
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        fontscale = 1
+        color = (0, 0, 255)
+        thickness = 2
+        print("pt1,pt2", point1, point2)
+        dist = get_distance(point1, point2)
+        self.distances.append("Frame {} - Distance: {}".format(self.frame_number, dist))
+        self.num_distances.append(dist)
+        frame = cv2.putText(frame, 'Distance: {}'.format(dist), org, font,
+                            fontscale, color, thickness, cv2.LINE_AA)
+        self.frame_number += 1
+        return frame
+
     def distance_overlay(self):
         """
         Creates overlay for distance
-        :param display:
-        :param point1:
-        :param point2:
         :return:
         """
         # Remove any current images in output file
@@ -144,15 +195,28 @@ class DisplayData():
         # Add overlay
         for idx, path in enumerate(self.data.input_files):
             frame = cv2.imread(path)
-            frame = add_points_to_image(frame, [self.fp(self.keypoint1, idx), self.fp(self.keypoint2, idx)])
-            frame = add_line_between_points(frame, [self.fp(self.keypoint1, idx), self.fp(self.keypoint2, idx)])
+            frame = self.add_points_to_image(frame, [self.fp(self.keypoint1, idx), self.fp(self.keypoint2, idx)])
+            frame = self.add_line_between_points(frame, [self.fp(self.keypoint1, idx), self.fp(self.keypoint2, idx)])
             save_frame(frame)
         save_video()
+        if self.gui.distance_checkbox == Qt.Checked:
+            print("Saving distances to text file")
+            self.save_text(self.distances)
+        max_dist = 0
+        min_dist = 999
+        for dist in self.num_distances:
+            if dist > max_dist:
+                max_dist = dist
+            if dist < min_dist:
+                min_dist = dist
+        self.gui.max_dist_label.setText("Max dist: {}".format(max_dist))
+        self.gui.min_dist_label.setText("Min dist: {}".format(min_dist))
 
 
 class GUI(QMainWindow):
     def __init__(self, display):
         super(GUI, self).__init__()
+        self.output_movie = ""
         self.wid = QWidget(self)
         self.setCentralWidget(self.wid)
         self.grid = QGridLayout()
@@ -163,11 +227,12 @@ class GUI(QMainWindow):
         self.setGeometry(50, 50, 500, 500)
         self.setWindowTitle("Super cool Alpha ver.")
         self.display = display
-        #self.app = QApplication([])
+        self.display.gui = self
+        # self.app = QApplication([])
         QApplication.setStyle(QStyleFactory.create("Fusion"))
 
-        #self.window = QWidget(parent=self)
-        #self.layout = QBoxLayout(QBoxLayout.LeftToRight, self.window)
+        # self.window = QWidget(parent=self)
+        # self.layout = QBoxLayout(QBoxLayout.LeftToRight, self.window)
 
         self.gif()
 
@@ -175,8 +240,15 @@ class GUI(QMainWindow):
 
         self.dropdown()
 
-        #self.window.setLayout(self.layout)
-        #self.window.show()
+        self.print_option_checkbox()
+        self.distance_checkbox = Qt.Unchecked
+
+        self.metric_labels()
+
+        self.progress_bar()
+
+        # self.window.setLayout(self.layout)
+        # self.window.show()
         self.wid.setLayout(self.grid)
         self.show()
 
@@ -193,35 +265,61 @@ class GUI(QMainWindow):
     def start_Button(self):
 
         self.start_button = QPushButton('Start', self)
+        self.start_button.clicked.connect(self.startbuttonclick)
         self.start_button.clicked.connect(self.display.distance_overlay)
         self.grid.addWidget(self.start_button, 3, 6)
-        #self.start_button.move(300, 400)
-        #self.layout.addWidget(self.start_button)
+        # self.start_button.move(300, 400)
+        # self.layout.addWidget(self.start_button)
+
+    def startbuttonclick(self):
+        self.calc = External(self)
+
+
+
 
     def dropdown(self):
         self.first_label = QLabel("First point", self)
         self.second_label = QLabel("Second point", self)
         self.second_label.setAlignment(Qt.AlignBottom)
         self.first_label.setAlignment(Qt.AlignBottom)
-        self.grid.addWidget(self.first_label, 2,3)
+        self.grid.addWidget(self.first_label, 2, 3)
         self.grid.addWidget(self.second_label, 2, 0)
 
-        #self.first_label.move(50, 220)
-        #self.second_label.move(300, 220)
+        # self.first_label.move(50, 220)
+        # self.second_label.move(300, 220)
         dropdown1 = QComboBox(self)
         dropdown1.addItem("LBigToe")
         dropdown1.addItem("LWrist")
         dropdown1.addItem("LElbow")
+        dropdown1.addItem("LEye")
+        dropdown1.addItem("LHeel")
+        dropdown1.addItem("LAnkle")
+        dropdown1.addItem("LHip")
+        dropdown1.addItem("LEar")
+        dropdown1.addItem("LShoulder")
+        dropdown1.addItem("MidHip")
+        dropdown1.addItem("Nose")
+        dropdown1.addItem("Neck")
+
         self.grid.addWidget(dropdown1, 3, 3)
-        #dropdown1.move(50, 250)
-        #self.layout.addWidget(dropdown1)
+        # dropdown1.move(50, 250)
+        # self.layout.addWidget(dropdown1)
         dropdown1.activated[str].connect(self.set_dropdown1)
 
         dropdown2 = QComboBox(self)
         dropdown2.addItem("RBigToe")
         dropdown2.addItem("RWrist")
         dropdown2.addItem("RElbow")
-        #dropdown2.move(300, 250)
+        dropdown2.addItem("REye")
+        dropdown2.addItem("RHeel")
+        dropdown2.addItem("RAnkle")
+        dropdown2.addItem("RHip")
+        dropdown2.addItem("REar")
+        dropdown2.addItem("RShoulder")
+        dropdown2.addItem("MidHip")
+        dropdown2.addItem("Nose")
+        dropdown2.addItem("Neck")
+        # dropdown2.move(300, 250)
         self.grid.addWidget(dropdown2, 3, 0)
         dropdown2.activated[str].connect(self.set_dropdown2)
 
@@ -233,9 +331,69 @@ class GUI(QMainWindow):
         self.display.keypoint2 = text
         print(self.display.keypoint2)
 
+    def print_option_checkbox(self):
+
+        box = QCheckBox("Distance", self)
+        box.stateChanged.connect(self.distance_clickbox)
+        self.grid.addWidget(box, 1, 0)
+
+    def distance_clickbox(self, state):
+
+        if state == Qt.Checked:
+            self.distance_checkbox = Qt.Checked
+            print('Checked')
+        else:
+            self.distance_checkbox = Qt.Unchecked
+            print('Unchecked')
+
+    def metric_labels(self):
+        self.dist_layout = QVBoxLayout()
+        self.max_dist_label = QLabel("Max dist: ", self)
+        self.min_dist_label = QLabel("Min dist: ", self)
+        self.dist_layout.addWidget(self.max_dist_label)
+        self.dist_layout.addWidget(self.min_dist_label)
+        temp_widget = QWidget()
+        temp_widget.setLayout(self.dist_layout)
+        self.grid.addWidget(temp_widget, 1, 3)
+        # self.grid.addWidget(self.dist_layout, 1, 3)
+
+    def progress_bar(self):
+        self.progress = QProgressBar(self)
+        self.progress.setGeometry(0, 0, 100, 25)
+        self.progress.setMaximum(100)
+        self.grid.addWidget(self.progress, 4, 0)
+
+    def onCountChanged(self, value):
+        self.progress.setValue(value)
 
 
+TIME_LIMIT = 24000
 
+
+class External(QThread):
+    """
+    Runs a counter thread.
+    """
+    def __init__(self, gui):
+        super(External, self).__init__()
+        self.gui = gui
+        self.num_files = len(self.gui.display.data.data_files)
+        self.progress = 0
+        self.frame = 1
+        self.start()
+
+    def run(self):
+        count = 0
+        add = 100 / self.num_files
+        print("ADD",add)
+        while count < TIME_LIMIT:
+            time.sleep(0.01)
+            count += 1
+            if self.frame != self.gui.display.frame_number:
+                print(self.frame, self.gui.display.frame_number, self.progress)
+                self.frame = self.gui.display.frame_number
+                self.progress += add
+                self.gui.onCountChanged(self.progress)
 
 
 def save_frame(frame):
