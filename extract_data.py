@@ -122,17 +122,20 @@ class DisplayData:
         self.keypoint2 = "RBigToe"
         self.gui = None
         self.distances = []
+        self.distances.append("Distance from {} to {}".format(self.keypoint1, self.keypoint2))
         self.num_distances = []
+        self.angles = []
+        self.num_angles = []
         self.frame_number = 1
 
-    def save_text(self, alist):
+    def save_text(self, alist, text_type):
         """
         Saves a test file containing the log
         :return:
         """
 
         time_stamp = datetime.now()
-        filename = str("metrics/log_{}.txt".format(time_stamp.strftime("%Y-%m-%d_%H-%M-%S")))
+        filename = str("metrics/{}_log_{}.txt".format(text_type, time_stamp.strftime("%Y-%m-%d_%H-%M-%S")))
         f = open(filename, "w+")
         for something in alist:
             f.write("%s\n" % something)
@@ -140,9 +143,10 @@ class DisplayData:
 
     def fp(self, keypoint, frame_index):
         """
+        e.g fp("RBigToe, 1) will get x,y coord of RBigToe from frame 1
         Returns keypoint as x,y coordinate corresponding to index
-        :param keypoint:
-        :param frame_index:
+        :param keypoint: string that is key of dictionary e.g "RBigToe"
+        :param frame_index: what frame to access
         :return:
         """
         return self.data.key_points[keypoint][frame_index][:-1]
@@ -154,12 +158,11 @@ class DisplayData:
         :param keypoints: list of keypoint coordinates to overlay
         :return: writes frame to output_images
         """
-        self.distances.append("Distance from {} to {}".format(self.keypoint1, self.keypoint2))
         for keypoint in keypoints:
             cv2.circle(frame, (int(keypoint[0]), int(keypoint[1])), 10, (0, 0, 255), -1)
         return frame
 
-    def add_line_between_points(self, frame, points):
+    def add_line_between_points(self, frame, points, thickness):
         """
         Adds a line overlay between two points and puts pixel distance text
         :param frame:
@@ -168,19 +171,10 @@ class DisplayData:
         """
         point1 = list(map(int, points[0]))
         point2 = list(map(int, points[1]))
-        cv2.line(frame, tuple(point1), tuple(point2), (0, 255, 0), thickness=3, lineType=8)
-        org = tuple(point1)
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        fontscale = 1
-        color = (0, 0, 255)
-        thickness = 2
-        print("pt1,pt2", point1, point2)
-        dist = get_distance(point1, point2)
-        self.distances.append("Frame {} - Distance: {}".format(self.frame_number, dist))
-        self.num_distances.append(dist)
-        frame = cv2.putText(frame, 'Distance: {}'.format(dist), org, font,
-                            fontscale, color, thickness, cv2.LINE_AA)
-        self.frame_number += 1
+        cv2.line(frame, tuple(point1), tuple(point2), (0, 255, 0), thickness=thickness, lineType=8)
+
+        # print("pt1,pt2", point1, point2)
+
         return frame
 
     def distance_overlay(self):
@@ -188,20 +182,26 @@ class DisplayData:
         Creates overlay for distance
         :return:
         """
-        # Remove any current images in output file
-        files = glob.glob("{}\\*.png".format("output_images"))
-        for f in files:
-            os.remove(f)
         # Add overlay
         for idx, path in enumerate(self.data.input_files):
             frame = cv2.imread(path)
             frame = self.add_points_to_image(frame, [self.fp(self.keypoint1, idx), self.fp(self.keypoint2, idx)])
-            frame = self.add_line_between_points(frame, [self.fp(self.keypoint1, idx), self.fp(self.keypoint2, idx)])
+            frame = self.add_line_between_points(frame, [self.fp(self.keypoint1, idx), self.fp(self.keypoint2, idx)], 3)
+            org = tuple([int(self.fp(self.keypoint1, idx)[0]), int(self.fp(self.keypoint1, idx)[1])])
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            fontscale = 1
+            color = (0, 0, 255)
+            thickness = 2
+            dist = get_distance(self.fp(self.keypoint1, idx), self.fp(self.keypoint2, idx))
+            self.distances.append("Frame {} - Distance: {}".format(self.frame_number, dist))
+            self.num_distances.append(dist)
+            frame = cv2.putText(frame, 'Distance: {}'.format(dist), org, font,
+                                fontscale, color, thickness, cv2.LINE_AA)
+            self.frame_number += 1
             save_frame(frame)
-        save_video()
         if self.gui.distance_checkbox == Qt.Checked:
             print("Saving distances to text file")
-            self.save_text(self.distances)
+            self.save_text(self.distances, "Distance")
         max_dist = 0
         min_dist = 999
         for dist in self.num_distances:
@@ -211,6 +211,59 @@ class DisplayData:
                 min_dist = dist
         self.gui.max_dist_label.setText("Max dist: {}".format(max_dist))
         self.gui.min_dist_label.setText("Min dist: {}".format(min_dist))
+
+    def get_angle(self, p3, p2, p1):
+        """
+        a = (p1.x - p2.x, p1.y - p2.y)
+        b = (p1.x - p3.x, p1.y - p3.y)
+        a dot b = mag(a)mag(b)cos(theta)
+        Returns the angle from three points
+        :param p1: point 1 (x,y)
+        :param p2: point 2 (x,y)
+        :param p3: common point to pt 1 & 2 (x,y)
+        :return: angle in degrees?
+        """
+        a = (p1[0] - p2[0], p1[1] - p2[1])
+        b = (p1[0] - p3[0], p1[1] - p3[1])
+        angle = np.arccos(np.dot(a, b) / (get_mag(a) * get_mag(b)))
+        print("ANGLE", angle)
+        return np.degrees(angle)
+
+    def angle_overlay(self):
+        """
+        Creates overlay for distance
+        :return:
+        """
+        # Add overlay
+        for idx, path in enumerate(self.data.input_files):
+            frame = cv2.imread(path)
+            frame = self.add_points_to_image(frame, [self.fp("RKnee", idx), self.fp("LKnee", idx), self.fp("MidHip", idx)])
+            frame = self.add_line_between_points(frame,
+                                                 [self.fp("RKnee", idx), self.fp("MidHip", idx)], 16)
+            frame = self.add_line_between_points(frame,
+                                                 [self.fp("LKnee", idx), self.fp("MidHip", idx)], 16)
+            org = tuple([int(self.fp("MidHip", idx)[0]), int(self.fp("MidHip", idx)[1])])
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            fontscale = 1
+            color = (0, 0, 255)
+            thickness = 2
+            angle = self.get_angle(self.fp("LKnee", idx), self.fp("RKnee", idx), self.fp("MidHip", idx))
+            self.angles.append("Frame {} - Angle: {}".format(self.frame_number, angle))
+            self.num_angles.append(angle)
+            frame = cv2.putText(frame, 'Angle: {}'.format(angle), org, font,
+                                fontscale, color, thickness, cv2.LINE_AA)
+            self.frame_number += 1
+            save_frame(frame)
+        if self.gui.angle_checkbox == Qt.Checked:
+            print("Saving angles to text file")
+            self.save_text(self.angles, "Angle")
+        max_angle = 0
+        for an_angle in self.num_angles:
+            if an_angle > max_angle:
+                max_angle = an_angle
+
+        self.gui.angle_label.setText("Max Angle: {}".format(max_angle))
+
 
 
 class GUI(QMainWindow):
@@ -242,6 +295,7 @@ class GUI(QMainWindow):
 
         self.print_option_checkbox()
         self.distance_checkbox = Qt.Unchecked
+        self.angle_checkbox = Qt.Unchecked
 
         self.metric_labels()
 
@@ -266,16 +320,42 @@ class GUI(QMainWindow):
 
         self.start_button = QPushButton('Start', self)
         self.start_button.clicked.connect(self.startbuttonclick)
-        self.start_button.clicked.connect(self.display.distance_overlay)
+        self.start_button.clicked.connect(self.start_button_functions)
         self.grid.addWidget(self.start_button, 3, 6)
         # self.start_button.move(300, 400)
         # self.layout.addWidget(self.start_button)
 
+    def start_button_functions(self):
+        # Remove any current images in output file
+        files = glob.glob("{}\\*.png".format("output_images"))
+        for f in files:
+            os.remove(f)
+        start = 0
+        if self.distance_checkbox == Qt.Checked:
+            start = 1
+            self.display.distance_overlay()
+
+        if self.angle_checkbox == Qt.Checked:
+            start = 1
+            self.display.angle_overlay()
+        if start == 0:
+            print("No option selected ! ")
+            msg = QMessageBox()
+            msg.setWindowTitle("Whoops ! ")
+            msg.setText("No options were selected ! ")
+            msg.setIcon(QMessageBox.Information)
+            x = msg.exec_()
+        else:
+            save_video()
+            print("Process complete ! ")
+            msg = QMessageBox()
+            msg.setWindowTitle("Operation complete ! ")
+            msg.setText("The operations have successfully finished ! ")
+            msg.setIcon(QMessageBox.Information)
+            x = msg.exec_()
+
     def startbuttonclick(self):
         self.calc = External(self)
-
-
-
 
     def dropdown(self):
         self.first_label = QLabel("First point", self)
@@ -332,26 +412,43 @@ class GUI(QMainWindow):
         print(self.display.keypoint2)
 
     def print_option_checkbox(self):
-
+        self.checkbox_layout = QVBoxLayout()
         box = QCheckBox("Distance", self)
         box.stateChanged.connect(self.distance_clickbox)
-        self.grid.addWidget(box, 1, 0)
+        self.checkbox_layout.addWidget(box)
+
+        box_angle = QCheckBox("Angle", self)
+        box_angle.stateChanged.connect(self.angle_clickbox)
+        self.checkbox_layout.addWidget(box_angle)
+        temp_widget = QWidget()
+        temp_widget.setLayout(self.checkbox_layout)
+        self.grid.addWidget(temp_widget, 1, 0)
+
+    def angle_clickbox(self, state):
+        if state == Qt.Checked:
+            self.angle_checkbox = Qt.Checked
+            print('Angle Checked')
+        else:
+            self.angle_checkbox = Qt.Unchecked
+            print('Angle Unchecked')
 
     def distance_clickbox(self, state):
 
         if state == Qt.Checked:
             self.distance_checkbox = Qt.Checked
-            print('Checked')
+            print('Distance Checked')
         else:
             self.distance_checkbox = Qt.Unchecked
-            print('Unchecked')
+            print('Distance Unchecked')
 
     def metric_labels(self):
         self.dist_layout = QVBoxLayout()
         self.max_dist_label = QLabel("Max dist: ", self)
         self.min_dist_label = QLabel("Min dist: ", self)
+        self.angle_label = QLabel("Angle: ", self)
         self.dist_layout.addWidget(self.max_dist_label)
         self.dist_layout.addWidget(self.min_dist_label)
+        self.dist_layout.addWidget(self.angle_label)
         temp_widget = QWidget()
         temp_widget.setLayout(self.dist_layout)
         self.grid.addWidget(temp_widget, 1, 3)
@@ -374,6 +471,7 @@ class External(QThread):
     """
     Runs a counter thread.
     """
+
     def __init__(self, gui):
         super(External, self).__init__()
         self.gui = gui
@@ -385,7 +483,7 @@ class External(QThread):
     def run(self):
         count = 0
         add = 100 / self.num_files
-        print("ADD",add)
+        print("ADD", add)
         while count < TIME_LIMIT:
             time.sleep(0.01)
             count += 1
@@ -490,6 +588,10 @@ def save_video():
         video.write(cv2.imread(image))
     cv2.destroyAllWindows()
     video.release()
+
+
+def get_mag(pt1):
+    return (pt1[0] ** 2 + pt1[1] ** 2) ** 0.5
 
 
 def main(argv=None):
