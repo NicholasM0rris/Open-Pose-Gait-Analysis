@@ -126,6 +126,7 @@ class DisplayData:
         self.num_distances = []
         self.angles = []
         self.num_angles = []
+        self.frame_list = []
         self.frame_number = 1
 
     def save_text(self, alist, text_type):
@@ -140,6 +141,7 @@ class DisplayData:
         for something in alist:
             f.write("%s\n" % something)
         f.close()
+        self.frame_number = 1
 
     def fp(self, keypoint, frame_index):
         """
@@ -183,27 +185,51 @@ class DisplayData:
         :return:
         """
         # Add overlay
-        for idx, path in enumerate(self.data.input_files):
-            frame = cv2.imread(path)
-            frame = self.add_points_to_image(frame, [self.fp(self.keypoint1, idx), self.fp(self.keypoint2, idx)])
-            frame = self.add_line_between_points(frame, [self.fp(self.keypoint1, idx), self.fp(self.keypoint2, idx)], 3)
-            org = tuple([int(self.fp(self.keypoint1, idx)[0]), int(self.fp(self.keypoint1, idx)[1])])
-            font = cv2.FONT_HERSHEY_SIMPLEX
-            fontscale = 1
-            color = (0, 0, 255)
-            thickness = 2
-            dist = get_distance(self.fp(self.keypoint1, idx), self.fp(self.keypoint2, idx))
-            self.distances.append("Frame {} - Distance: {}".format(self.frame_number, dist))
-            self.num_distances.append(dist)
-            frame = cv2.putText(frame, 'Distance: {}'.format(dist), org, font,
-                                fontscale, color, thickness, cv2.LINE_AA)
-            self.frame_number += 1
-            save_frame(frame)
+        if not self.frame_list:
+            for idx, path in enumerate(self.data.input_files):
+                frame = cv2.imread(path)
+                frame = self.add_points_to_image(frame, [self.fp(self.keypoint1, idx), self.fp(self.keypoint2, idx)])
+                frame = self.add_line_between_points(frame,
+                                                     [self.fp(self.keypoint1, idx), self.fp(self.keypoint2, idx)], 3)
+                org = tuple([int(self.fp(self.keypoint1, idx)[0]), int(self.fp(self.keypoint1, idx)[1])])
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                fontscale = 1
+                color = (0, 0, 255)
+                thickness = 2
+                dist = get_distance(self.fp(self.keypoint1, idx), self.fp(self.keypoint2, idx))
+                self.distances.append("Frame {} - Distance: {}".format(self.frame_number, dist))
+                self.num_distances.append(dist)
+                frame = cv2.putText(frame, 'Distance: {}'.format(dist), org, font,
+                                    fontscale, color, thickness, cv2.LINE_AA)
+                self.frame_number += 1
+                self.frame_list.append(frame)
+                # save_frame(frame)
+        # If there has already been frames processed (frame_list not empty)
+        else:
+            temp_list = []
+            for idx, frame in enumerate(self.frame_list):
+                frame = self.add_points_to_image(frame, [self.fp(self.keypoint1, idx), self.fp(self.keypoint2, idx)])
+                frame = self.add_line_between_points(frame,
+                                                     [self.fp(self.keypoint1, idx), self.fp(self.keypoint2, idx)], 3)
+                org = tuple([int(self.fp(self.keypoint1, idx)[0]), int(self.fp(self.keypoint1, idx)[1])])
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                fontscale = 1
+                color = (0, 0, 255)
+                thickness = 2
+                dist = get_distance(self.fp(self.keypoint1, idx), self.fp(self.keypoint2, idx))
+                self.distances.append("Frame {} - Distance: {}".format(self.frame_number, dist))
+                self.num_distances.append(dist)
+                frame = cv2.putText(frame, 'Distance: {}'.format(dist), org, font,
+                                    fontscale, color, thickness, cv2.LINE_AA)
+                self.frame_number += 1
+                temp_list.append(frame)
+            self.frame_list = temp_list
         if self.gui.distance_checkbox == Qt.Checked:
             print("Saving distances to text file")
             self.save_text(self.distances, "Distance")
         max_dist = 0
         min_dist = 999
+        # Get max and min distances
         for dist in self.num_distances:
             if dist > max_dist:
                 max_dist = dist
@@ -235,25 +261,52 @@ class DisplayData:
         :return:
         """
         # Add overlay
-        for idx, path in enumerate(self.data.input_files):
-            frame = cv2.imread(path)
-            frame = self.add_points_to_image(frame, [self.fp("RKnee", idx), self.fp("LKnee", idx), self.fp("MidHip", idx)])
-            frame = self.add_line_between_points(frame,
-                                                 [self.fp("RKnee", idx), self.fp("MidHip", idx)], 16)
-            frame = self.add_line_between_points(frame,
-                                                 [self.fp("LKnee", idx), self.fp("MidHip", idx)], 16)
-            org = tuple([int(self.fp("MidHip", idx)[0]), int(self.fp("MidHip", idx)[1])])
-            font = cv2.FONT_HERSHEY_SIMPLEX
-            fontscale = 1
-            color = (0, 0, 255)
-            thickness = 2
-            angle = self.get_angle(self.fp("LKnee", idx), self.fp("RKnee", idx), self.fp("MidHip", idx))
-            self.angles.append("Frame {} - Angle: {}".format(self.frame_number, angle))
-            self.num_angles.append(angle)
-            frame = cv2.putText(frame, 'Angle: {}'.format(angle), org, font,
-                                fontscale, color, thickness, cv2.LINE_AA)
-            self.frame_number += 1
-            save_frame(frame)
+        if not self.frame_list:
+            for idx, path in enumerate(self.data.input_files):
+                frame = cv2.imread(path)
+                frame = self.add_points_to_image(frame,
+                                                 [self.fp("RKnee", idx), self.fp("LKnee", idx), self.fp("MidHip", idx)])
+                frame = self.add_line_between_points(frame,
+                                                     [self.fp("RKnee", idx), self.fp("MidHip", idx)], 16)
+                frame = self.add_line_between_points(frame,
+                                                     [self.fp("LKnee", idx), self.fp("MidHip", idx)], 16)
+                org = tuple([int(self.fp("MidHip", idx)[0]), int(self.fp("MidHip", idx)[1])])
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                fontscale = 1
+                color = (0, 0, 255)
+                thickness = 2
+                angle = self.get_angle(self.fp("LKnee", idx), self.fp("RKnee", idx), self.fp("MidHip", idx))
+                self.angles.append("Frame {} - Angle: {}".format(self.frame_number, angle))
+                self.num_angles.append(angle)
+                frame = cv2.putText(frame, 'Angle: {}'.format(angle), org, font,
+                                    fontscale, color, thickness, cv2.LINE_AA)
+                self.frame_number += 1
+                # save_frame(frame)
+                self.frame_list.append(frame)
+        else:
+            temp_list = []
+            for idx, frame in enumerate(self.frame_list):
+                frame = self.add_points_to_image(frame,
+                                                 [self.fp("RKnee", idx), self.fp("LKnee", idx), self.fp("MidHip", idx)])
+                frame = self.add_line_between_points(frame,
+                                                     [self.fp("RKnee", idx), self.fp("MidHip", idx)], 16)
+                frame = self.add_line_between_points(frame,
+                                                     [self.fp("LKnee", idx), self.fp("MidHip", idx)], 16)
+                org = tuple([int(self.fp("MidHip", idx)[0]), int(self.fp("MidHip", idx)[1])])
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                fontscale = 1
+                color = (0, 0, 255)
+                thickness = 2
+                angle = self.get_angle(self.fp("LKnee", idx), self.fp("RKnee", idx), self.fp("MidHip", idx))
+                self.angles.append("Frame {} - Angle: {}".format(self.frame_number, angle))
+                self.num_angles.append(angle)
+                frame = cv2.putText(frame, 'Angle: {}'.format(angle), org, font,
+                                    fontscale, color, thickness, cv2.LINE_AA)
+                self.frame_number += 1
+                temp_list.append(frame)
+
+            self.frame_list = temp_list
+
         if self.gui.angle_checkbox == Qt.Checked:
             print("Saving angles to text file")
             self.save_text(self.angles, "Angle")
@@ -265,10 +318,11 @@ class DisplayData:
         self.gui.angle_label.setText("Max Angle: {}".format(max_angle))
 
 
-
 class GUI(QMainWindow):
     def __init__(self, display):
         super(GUI, self).__init__()
+        self.num_operations = 0
+        self.calc = None
         self.output_movie = ""
         self.wid = QWidget(self)
         self.setCentralWidget(self.wid)
@@ -346,6 +400,8 @@ class GUI(QMainWindow):
             msg.setIcon(QMessageBox.Information)
             x = msg.exec_()
         else:
+            for frame in self.display.frame_list:
+                save_frame(frame)
             save_video()
             print("Process complete ! ")
             msg = QMessageBox()
@@ -355,7 +411,16 @@ class GUI(QMainWindow):
             x = msg.exec_()
 
     def startbuttonclick(self):
-        self.calc = External(self)
+        if self.angle_checkbox == Qt.Checked:
+            self.num_operations += 1
+        if self.distance_checkbox == Qt.Checked:
+            self.num_operations += 1
+        if not self.calc:
+            self.calc = External(self)
+        else:
+            print("set counter to 0")
+            self.calc.progress = 0
+            self.calc.count = 0
 
     def dropdown(self):
         self.first_label = QLabel("First point", self)
@@ -464,7 +529,7 @@ class GUI(QMainWindow):
         self.progress.setValue(value)
 
 
-TIME_LIMIT = 24000
+TIME_LIMIT = 2400000000000000000000000000
 
 
 class External(QThread):
@@ -475,18 +540,26 @@ class External(QThread):
     def __init__(self, gui):
         super(External, self).__init__()
         self.gui = gui
-        self.num_files = len(self.gui.display.data.data_files)
+        if self.gui.num_operations == 0:
+            num_operations = 1
+        else:
+            num_operations = self.gui.num_operations
+        self.num_files = len(self.gui.display.data.data_files) * num_operations
         self.progress = 0
         self.frame = 1
+        self.count = 0
         self.start()
 
     def run(self):
-        count = 0
-        add = 100 / self.num_files
+
+        try:
+            add = 100 / self.num_files
+        except ZeroDivisionError:
+            print("ZeroDivisionError")
+            sys.exit()
         print("ADD", add)
-        while count < TIME_LIMIT:
-            time.sleep(0.01)
-            count += 1
+        while self.count < TIME_LIMIT:
+            self.count += 1
             if self.frame != self.gui.display.frame_number:
                 print(self.frame, self.gui.display.frame_number, self.progress)
                 self.frame = self.gui.display.frame_number
@@ -581,7 +654,11 @@ def save_video():
     images = []
     for filename in glob.glob("{}\\*.png".format("output_images")):
         images.append(filename)
-    frame = cv2.imread(images[0])
+    try:
+        frame = cv2.imread(images[0])
+    except IndexError:
+        print("Index error: No images in output folder")
+        sys.exit("Index error: No images in output folder")
     height, width, layers = frame.shape
     video = cv2.VideoWriter("{}/Output.avi".format("processed_video"), 0, 1, (width, height))
     for image in images:
