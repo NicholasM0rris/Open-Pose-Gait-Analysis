@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt, QThread
 from PyQt5.QtGui import *
 import time
+import matplotlib.pyplot as plt
 
 ap = argparse.ArgumentParser()
 ap.add_argument('-i', '--image', required=False, help='Add image')
@@ -128,6 +129,30 @@ class DisplayData:
         self.num_angles = []
         self.frame_list = []
         self.frame_number = 1
+
+    def plot_points(self, keypoint):
+        frame = cv2.imread(self.data.input_files[0])
+        height, width, layers = frame.shape
+        x = []
+        y = []
+        area = 10
+        colors = (0,0,0)
+        for idx, point in enumerate(self.data.key_points):
+            points = self.fp(keypoint, idx)
+            x.append(points[0])
+            y.append(points[1])
+        print(x)
+        print(y)
+        print(self.data.key_points["RBigToe"])
+        plt.scatter(x, y, c=colors, s=area, alpha=0.5)
+        plt.title('Scatter plot')
+        axes = plt.gca()
+        axes.set_xlim([0, width])
+        axes.set_ylim([0, height])
+        plt.xlabel('x')
+        plt.ylabel('y')
+        plt.gca().invert_yaxis()
+        plt.savefig("plots/scatter.png")
 
     def save_text(self, alist, text_type):
         """
@@ -351,6 +376,9 @@ class GUI(QMainWindow):
         self.distance_checkbox = Qt.Unchecked
         self.angle_checkbox = Qt.Unchecked
 
+        self.plot_checkbox()
+        self.trajectory_checkbox = Qt.Unchecked
+
         self.metric_labels()
 
         self.progress_bar()
@@ -392,6 +420,11 @@ class GUI(QMainWindow):
         if self.angle_checkbox == Qt.Checked:
             start = 1
             self.display.angle_overlay()
+
+        if self.trajectory_checkbox == Qt.Checked:
+            start = 1
+            self.display.plot_points("RBigToe")
+
         if start == 0:
             print("No option selected ! ")
             msg = QMessageBox()
@@ -488,6 +521,29 @@ class GUI(QMainWindow):
         temp_widget = QWidget()
         temp_widget.setLayout(self.checkbox_layout)
         self.grid.addWidget(temp_widget, 1, 0)
+
+    def plot_checkbox(self):
+        self.trajectory_layout = QVBoxLayout()
+        self.trajectory_label = QLabel("Trajectory: ", self)
+        self.trajectory_layout.addWidget(self.trajectory_label)
+
+        box = QCheckBox("Plot trajectory", self)
+        box.stateChanged.connect(self.trajectory_clickbox)
+        self.trajectory_layout.addWidget(box)
+
+
+
+        temp_widget = QWidget()
+        temp_widget.setLayout(self.trajectory_layout)
+        self.grid.addWidget(temp_widget, 1, 4)
+
+    def trajectory_clickbox(self, state):
+        if state == Qt.Checked:
+            self.trajectory_checkbox = Qt.Checked
+            print('Trajectory Checked')
+        else:
+            self.trajectory_checkbox = Qt.Unchecked
+            print('Trajectory Unchecked')
 
     def angle_clickbox(self, state):
         if state == Qt.Checked:
