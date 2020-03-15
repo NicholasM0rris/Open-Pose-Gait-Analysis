@@ -136,7 +136,7 @@ class DisplayData:
         x = []
         y = []
         area = 10
-        colors = (0,0,0)
+        colors = (0, 0, 0)
         for idx, point in enumerate(self.data.key_points):
             points = self.fp(keypoint, idx)
             x.append(points[0])
@@ -342,6 +342,9 @@ class DisplayData:
 
         self.gui.angle_label.setText("Max Angle: {}".format(max_angle))
 
+    def get_step_width(self):
+        pass
+
 
 class GUI(QMainWindow):
     def __init__(self, display):
@@ -350,8 +353,10 @@ class GUI(QMainWindow):
         self.calc = None
         self.output_movie = ""
         self.wid = QWidget(self)
-        self.setCentralWidget(self.wid)
+        self.tab = QTabWidget(self)
+        self.setCentralWidget(self.tab)
         self.grid = QGridLayout()
+        self.grid2 = QGridLayout()
         self.palette = QPalette()
         self.palette.setColor(QPalette.Button, Qt.blue)
         self.palette.setColor(QPalette.ButtonText, Qt.white)
@@ -365,10 +370,13 @@ class GUI(QMainWindow):
 
         # self.window = QWidget(parent=self)
         # self.layout = QBoxLayout(QBoxLayout.LeftToRight, self.window)
+        self.create_tabs()
 
         self.gif()
+        self.gif2()
 
         self.start_Button()
+        self.start_Button2()
 
         self.dropdown()
 
@@ -376,17 +384,29 @@ class GUI(QMainWindow):
         self.distance_checkbox = Qt.Unchecked
         self.angle_checkbox = Qt.Unchecked
 
+        self.step_width_checkbox()
+        self.coronal_checkbox = Qt.Unchecked
         self.plot_checkbox()
         self.trajectory_checkbox = Qt.Unchecked
 
         self.metric_labels()
 
         self.progress_bar()
+        self.progress_bar2()
 
         # self.window.setLayout(self.layout)
         # self.window.show()
-        self.wid.setLayout(self.grid)
+        self.tab1.setLayout(self.grid)
+        self.tab2.setLayout(self.grid2)
         self.show()
+
+    def create_tabs(self):
+
+        self.tab1 = QWidget()
+        self.tab2 = QWidget()
+
+        self.tab.addTab(self.tab1, "Sagittal")
+        self.tab.addTab(self.tab2, "Coronal")
 
     def gif(self):
 
@@ -398,6 +418,17 @@ class GUI(QMainWindow):
         self.movie.start()
         self.grid.addWidget(self.movie_label, 0, 3)
 
+    def gif2(self):
+
+        self.movie_label2 = QLabel()
+
+        self.movie2 = QMovie("support/skeleton_walking_coronal.gif")
+        self.movie_label2.setMovie(self.movie2)
+
+        self.movie2.start()
+        self.grid2.addWidget(self.movie_label2, 0, 0)
+
+
     def start_Button(self):
 
         self.start_button = QPushButton('Start', self)
@@ -406,6 +437,14 @@ class GUI(QMainWindow):
         self.grid.addWidget(self.start_button, 3, 6)
         # self.start_button.move(300, 400)
         # self.layout.addWidget(self.start_button)
+
+
+    def start_Button2(self):
+
+        self.start_button2 = QPushButton('Start', self)
+        self.start_button2.clicked.connect(self.startbuttonclick)
+        self.start_button2.clicked.connect(self.start_button_functions)
+        self.grid2.addWidget(self.start_button2, 3, 6)
 
     def start_button_functions(self):
         # Remove any current images in output file
@@ -531,11 +570,23 @@ class GUI(QMainWindow):
         box.stateChanged.connect(self.trajectory_clickbox)
         self.trajectory_layout.addWidget(box)
 
-
-
         temp_widget = QWidget()
         temp_widget.setLayout(self.trajectory_layout)
         self.grid.addWidget(temp_widget, 1, 4)
+
+    def step_width_checkbox(self):
+        self.step_width_layout = QVBoxLayout()
+        self.step_width_label = QLabel("Step width: ", self)
+        self.step_width_label.setAlignment(Qt.AlignBottom)
+        self.step_width_layout.addWidget(self.step_width_label)
+
+        box = QCheckBox("Get step width", self)
+        box.stateChanged.connect(self.coronal_clickbox)
+        self.step_width_layout.addWidget(box)
+
+        temp_widget = QWidget()
+        temp_widget.setLayout(self.step_width_layout)
+        self.grid2.addWidget(temp_widget, 1, 4)
 
     def trajectory_clickbox(self, state):
         if state == Qt.Checked:
@@ -562,6 +613,15 @@ class GUI(QMainWindow):
             self.distance_checkbox = Qt.Unchecked
             print('Distance Unchecked')
 
+    def coronal_clickbox(self, state):
+
+        if state == Qt.Checked:
+            self.coronal_checkbox = Qt.Checked
+            print('Distance Checked')
+        else:
+            self.coronal_checkbox = Qt.Unchecked
+            print('Distance Unchecked')
+
     def metric_labels(self):
         self.dist_layout = QVBoxLayout()
         self.max_dist_label = QLabel("Max dist: ", self)
@@ -580,6 +640,12 @@ class GUI(QMainWindow):
         self.progress.setGeometry(0, 0, 100, 25)
         self.progress.setMaximum(100)
         self.grid.addWidget(self.progress, 4, 0)
+
+    def progress_bar2(self):
+        self.progress2 = QProgressBar(self)
+        self.progress2.setGeometry(0, 0, 100, 25)
+        self.progress2.setMaximum(100)
+        self.grid2.addWidget(self.progress2, 4, 0)
 
     def onCountChanged(self, value):
         self.progress.setValue(value)
