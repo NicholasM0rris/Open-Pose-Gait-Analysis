@@ -53,11 +53,16 @@ class ExtractData:
     def __init__(self):
         self.cheese = 1
         self.path_to_input = "input_images"
+        self.path_to_coronal_input = "coronal_input_images"
         self.video_dimensions = ""
         self.data_files = []
         self.input_files = []
+        self.coronal_input_files = []
+        self.coronal_data_files = []
         self.path = "output"
+        self.coronal_path = "coronal_input_data"
         self.key_points = defaultdict(list)
+        self.coronal_key_points = defaultdict(list)
 
         self.get_data_files()
         self.get_data_frames()
@@ -80,6 +85,9 @@ class ExtractData:
         """
         for filename in glob.glob("{}\\*.JSON".format(self.path)):
             self.data_files.append(filename)
+        for filename in glob.glob("{}\\*.JSON".format(self.coronal_path)):
+            self.coronal_data_files.append(filename)
+
 
     def print_data_files(self):
         print(self.data_files)
@@ -95,6 +103,18 @@ class ExtractData:
             for key in key_points.keys():
                 self.key_points[key].append(
                     temp_df['people'][0]['pose_keypoints_2d'][key_points[key] * 3:key_points[key] * 3 + 3])
+        try:
+            for files in self.coronal_data_files:
+                temp = []
+                temp_df = json.load(open(files))
+                for key in key_points.keys():
+                    self.coronal_key_points[key].append(
+                        temp_df['people'][0]['pose_keypoints_2d'][key_points[key] * 3:key_points[key] * 3 + 3])
+        # Empty directories
+        except IndexError:
+            print("Error ! Coronal folders may be empty !")
+            sys.exit(1)
+
 
     def extract_video_frame(self, sec=0):
         if args['video']:
@@ -113,6 +133,8 @@ class ExtractData:
     def extract_frames(self):
         for filename in glob.glob("{}\\*.png".format(self.path_to_input)):
             self.input_files.append(filename)
+        for filename in glob.glob("{}\\*.png".format(self.path_to_coronal_input)):
+            self.coronal_input_files.append(filename)
 
 
 class DisplayData:
@@ -127,7 +149,10 @@ class DisplayData:
         self.num_distances = []
         self.angles = []
         self.num_angles = []
+        self.step_width = []
+        self.num_step_width = []
         self.frame_list = []
+        self.coronal_frame_list = []
         self.frame_number = 1
 
     def plot_points(self, keypoint):
@@ -177,6 +202,17 @@ class DisplayData:
         :return:
         """
         return self.data.key_points[keypoint][frame_index][:-1]
+
+
+    def fp2(self, keypoint, frame_index):
+        """
+        e.g fp("RBigToe, 1) will get x,y coord of RBigToe from frame 1
+        Returns keypoint as x,y coordinate corresponding to index
+        :param keypoint: string that is key of dictionary e.g "RBigToe"
+        :param frame_index: what frame to access
+        :return:
+        """
+        return self.data.coronal_key_points[keypoint][frame_index][:-1]
 
     def add_points_to_image(self, frame, keypoints):
         """
@@ -342,8 +378,71 @@ class DisplayData:
 
         self.gui.angle_label.setText("Max Angle: {}".format(max_angle))
 
-    def get_step_width(self):
-        pass
+    def get_step_width(self, index):
+        """
+        Get the coronal plane step width distances
+        :return:
+        """
+        return get_distance(self.fp2("RHeel", index), self.fp2("LHeel", index))
+
+    def display_step_width(self):
+        # Add overlay
+       # print("frame list : ", self.data.coronal_input_files)
+        # print("frame files : ", self.data.coronal_data_files)
+        #print("frame files : ", self.data.input_files)
+        if not self.coronal_frame_list:
+            for idx, path in enumerate(self.data.coronal_input_files):
+                frame = cv2.imread(path)
+                frame = self.add_points_to_image(frame, [self.fp2("RHeel", idx), self.fp2("LHeel", idx)])
+                frame = self.add_line_between_points(frame,
+                                                     [self.fp2("RHeel", idx), self.fp2("LHeel", idx)], 3)
+                org = tuple([int(self.fp2("RHeel", idx)[0]), int(self.fp2("LHeel", idx)[1])])
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                fontscale = 1
+                color = (0, 0, 255)
+                thickness = 2
+                dist = self.get_step_width(idx)
+                self.step_width.append("Frame {} - Step width: {}".format(self.frame_number, dist))
+                self.num_step_width.append(dist)
+                frame = cv2.putText(frame, 'Step width: {}'.format(dist), org, font,
+                                    fontscale, color, thickness, cv2.LINE_AA)
+                self.frame_number += 1
+                self.coronal_frame_list.append(frame)
+                # save_frame(frame)
+        # If there has already been frames processed (frame_list not empty)
+        else:
+            temp_list = []
+            for idx, frame in enumerate(self.coronal_frame_list):
+                frame = self.add_points_to_image(frame, [self.fp2("RHeel", idx), self.fp2("LHeel", idx)])
+                frame = self.add_line_between_points(frame,
+                                                     [self.fp2("RHeel", idx), self.fp2("LHeel", idx)], 3)
+                org = tuple([int(self.fp2("RHeel", idx)[0]), int(self.fp2("LHeel", idx)[1])])
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                fontscale = 1
+                color = (0, 0, 255)
+                thickness = 2
+                dist = self.get_step_width(idx)
+                self.step_width.append("Frame {} - Step width: {}".format(self.frame_number, dist))
+                self.num_step_width.append(dist)
+                frame = cv2.putText(frame, 'Step width: {}'.format(dist), org, font,
+                                    fontscale, color, thickness, cv2.LINE_AA)
+                self.frame_number += 1
+                temp_list.append(frame)
+            self.coronal_frame_list = temp_list
+        if self.gui.coronal_checkbox == Qt.Checked:
+            print("Saving step width to text file")
+            self.save_text(self.step_width, "Step width")
+        max_dist = 0
+        min_dist = 999
+        # Get max and min distances
+        for dist in self.num_step_width:
+            if dist > max_dist:
+                max_dist = dist
+            if dist < min_dist:
+                min_dist = dist
+        # self.gui.max_dist_label.setText("Max dist: {}".format(max_dist))
+        # self.gui.min_dist_label.setText("Min dist: {}".format(min_dist))
+        print(min_dist, max_dist)
 
 
 class GUI(QMainWindow):
@@ -428,7 +527,6 @@ class GUI(QMainWindow):
         self.movie2.start()
         self.grid2.addWidget(self.movie_label2, 0, 0)
 
-
     def start_Button(self):
 
         self.start_button = QPushButton('Start', self)
@@ -438,13 +536,41 @@ class GUI(QMainWindow):
         # self.start_button.move(300, 400)
         # self.layout.addWidget(self.start_button)
 
-
     def start_Button2(self):
 
         self.start_button2 = QPushButton('Start', self)
-        self.start_button2.clicked.connect(self.startbuttonclick)
-        self.start_button2.clicked.connect(self.start_button_functions)
+        self.start_button2.clicked.connect(self.startbuttonclick2)
+        self.start_button2.clicked.connect(self.start_button_functions2)
         self.grid2.addWidget(self.start_button2, 3, 6)
+
+    def start_button_functions2(self):
+        # Remove any current images in output file
+        files = glob.glob("{}\\*.png".format("output_coronal_images"))
+        for f in files:
+            os.remove(f)
+        start = 0
+
+        if self.coronal_checkbox == Qt.Checked:
+            start = 1
+            self.display.display_step_width()
+
+        if start == 0:
+            print("No option selected ! ")
+            msg = QMessageBox()
+            msg.setWindowTitle("Whoops ! ")
+            msg.setText("No options were selected ! ")
+            msg.setIcon(QMessageBox.Information)
+            x = msg.exec_()
+        else:
+            for frame in self.display.coronal_frame_list:
+                save_frame2(frame)
+            save_video2()
+            print("Process complete ! ")
+            msg = QMessageBox()
+            msg.setWindowTitle("Operation complete ! ")
+            msg.setText("The operations have successfully finished ! ")
+            msg.setIcon(QMessageBox.Information)
+            x = msg.exec_()
 
     def start_button_functions(self):
         # Remove any current images in output file
@@ -481,6 +607,16 @@ class GUI(QMainWindow):
             msg.setText("The operations have successfully finished ! ")
             msg.setIcon(QMessageBox.Information)
             x = msg.exec_()
+
+    def startbuttonclick2(self):
+        if self.coronal_checkbox == Qt.Checked:
+            self.num_operations += 1
+        if not self.calc:
+            self.calc = External2(self)
+        else:
+            print("set counter to 0")
+            self.calc.progress = 0
+            self.calc.count = 0
 
     def startbuttonclick(self):
         if self.angle_checkbox == Qt.Checked:
@@ -650,6 +786,9 @@ class GUI(QMainWindow):
     def onCountChanged(self, value):
         self.progress.setValue(value)
 
+    def onCountChanged2(self, value):
+        self.progress2.setValue(value)
+
 
 TIME_LIMIT = 2400000000000000000000000000
 
@@ -658,7 +797,6 @@ class External(QThread):
     """
     Runs a counter thread.
     """
-
     def __init__(self, gui):
         super(External, self).__init__()
         self.gui = gui
@@ -673,7 +811,6 @@ class External(QThread):
         self.start()
 
     def run(self):
-
         try:
             add = 100 / self.num_files
         except ZeroDivisionError:
@@ -689,6 +826,42 @@ class External(QThread):
                 self.gui.onCountChanged(self.progress)
 
 
+class External2(QThread):
+    """
+    Runs a counter thread.
+    """
+    def __init__(self, gui):
+        super(External2, self).__init__()
+        self.gui = gui
+        if self.gui.num_operations == 0:
+            num_operations = 1
+        else:
+            num_operations = self.gui.num_operations
+        self.num_files = len(self.gui.display.data.coronal_data_files) * num_operations
+        self.progress = 0
+        self.frame = 1
+        self.count = 0
+        self.start()
+
+    def run(self):
+        try:
+            add = 100 / self.num_files
+        except ZeroDivisionError:
+            print("ZeroDivisionError")
+            sys.exit()
+        print("ADD", add)
+        while self.count < TIME_LIMIT:
+            self.count += 1
+            if self.frame != self.gui.display.frame_number:
+                print(self.frame, self.gui.display.frame_number, self.progress)
+                self.frame = self.gui.display.frame_number
+                self.progress += add
+                self.gui.onCountChanged2(self.progress)
+
+
+
+
+
 def save_frame(frame):
     """
     Save a frame to output_images
@@ -699,6 +872,18 @@ def save_frame(frame):
     filename = "{}.png".format(time_stamp.strftime("%Y-%m-%d_%H-%M-%S-%f"))
     path = "output_images\\{}".format(filename)
     cv2.imwrite(path, frame)
+
+def save_frame2(frame):
+    """
+    Save a frame to output_images
+    :param frame:
+    :return:
+    """
+    time_stamp = datetime.now()
+    filename = "{}.png".format(time_stamp.strftime("%Y-%m-%d_%H-%M-%S-%f"))
+    path = "output_coronal_images\\{}".format(filename)
+    cv2.imwrite(path, frame)
+
 
 
 def add_line_between_points(frame, points):
@@ -783,6 +968,27 @@ def save_video():
         sys.exit("Index error: No images in output folder")
     height, width, layers = frame.shape
     video = cv2.VideoWriter("{}/Output.avi".format("processed_video"), 0, 1, (width, height))
+    for image in images:
+        video.write(cv2.imread(image))
+    cv2.destroyAllWindows()
+    video.release()
+
+
+def save_video2():
+    """
+    Saves a video of processed image output to coronal processed_video directory
+    :return:
+    """
+    images = []
+    for filename in glob.glob("{}\\*.png".format("output_coronal_images")):
+        images.append(filename)
+    try:
+        frame = cv2.imread(images[0])
+    except IndexError:
+        print("Index error2: No images in output folder")
+        sys.exit("Index error: No images in output folder")
+    height, width, layers = frame.shape
+    video = cv2.VideoWriter("{}/Coronal_Output.avi".format("processed_video"), 0, 1, (width, height))
     for image in images:
         video.write(cv2.imread(image))
     cv2.destroyAllWindows()

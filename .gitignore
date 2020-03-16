@@ -13,3 +13,6 @@ gui_testing.py
 input_data2
 input_images2
 test.avi
+coronal_input_data/
+coronal_input_images/
+output_coronal_images/
