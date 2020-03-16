@@ -88,7 +88,6 @@ class ExtractData:
         for filename in glob.glob("{}\\*.JSON".format(self.coronal_path)):
             self.coronal_data_files.append(filename)
 
-
     def print_data_files(self):
         print(self.data_files)
 
@@ -114,7 +113,6 @@ class ExtractData:
         except IndexError:
             print("Error ! Coronal folders may be empty !")
             sys.exit(1)
-
 
     def extract_video_frame(self, sec=0):
         if args['video']:
@@ -202,7 +200,6 @@ class DisplayData:
         :return:
         """
         return self.data.key_points[keypoint][frame_index][:-1]
-
 
     def fp2(self, keypoint, frame_index):
         """
@@ -383,19 +380,20 @@ class DisplayData:
         Get the coronal plane step width distances
         :return:
         """
-        return get_distance(self.fp2("RHeel", index), self.fp2("LHeel", index))
+        return abs(self.fp2("RHeel", index)[0] - self.fp2("LHeel", index)[0])
 
     def display_step_width(self):
         # Add overlay
-       # print("frame list : ", self.data.coronal_input_files)
+        # print("frame list : ", self.data.coronal_input_files)
         # print("frame files : ", self.data.coronal_data_files)
-        #print("frame files : ", self.data.input_files)
+        # print("frame files : ", self.data.input_files)
         if not self.coronal_frame_list:
             for idx, path in enumerate(self.data.coronal_input_files):
                 frame = cv2.imread(path)
                 frame = self.add_points_to_image(frame, [self.fp2("RHeel", idx), self.fp2("LHeel", idx)])
                 frame = self.add_line_between_points(frame,
-                                                     [self.fp2("RHeel", idx), self.fp2("LHeel", idx)], 3)
+                                                     [self.fp2("RHeel", idx),
+                                                      (self.fp2("LHeel", idx)[0], self.fp2("RHeel", idx)[1])], 3)
                 org = tuple([int(self.fp2("RHeel", idx)[0]), int(self.fp2("LHeel", idx)[1])])
                 font = cv2.FONT_HERSHEY_SIMPLEX
                 fontscale = 1
@@ -797,6 +795,7 @@ class External(QThread):
     """
     Runs a counter thread.
     """
+
     def __init__(self, gui):
         super(External, self).__init__()
         self.gui = gui
@@ -830,6 +829,7 @@ class External2(QThread):
     """
     Runs a counter thread.
     """
+
     def __init__(self, gui):
         super(External2, self).__init__()
         self.gui = gui
@@ -859,9 +859,6 @@ class External2(QThread):
                 self.gui.onCountChanged2(self.progress)
 
 
-
-
-
 def save_frame(frame):
     """
     Save a frame to output_images
@@ -873,6 +870,7 @@ def save_frame(frame):
     path = "output_images\\{}".format(filename)
     cv2.imwrite(path, frame)
 
+
 def save_frame2(frame):
     """
     Save a frame to output_images
@@ -883,7 +881,6 @@ def save_frame2(frame):
     filename = "{}.png".format(time_stamp.strftime("%Y-%m-%d_%H-%M-%S-%f"))
     path = "output_coronal_images\\{}".format(filename)
     cv2.imwrite(path, frame)
-
 
 
 def add_line_between_points(frame, points):
