@@ -149,6 +149,8 @@ class DisplayData:
         self.num_angles = []
         self.step_width = []
         self.num_step_width = []
+        self.foot_angles = []
+        self.num_foot_angles = []
         self.frame_list = []
         self.coronal_frame_list = []
         self.frame_number = 1
@@ -313,9 +315,56 @@ class DisplayData:
         print("ANGLE", angle)
         return np.degrees(angle)
 
+    def get_left_vector_angle(self, idx):
+        """
+        180 - abs(arctan(m1) - arctan(m2))
+        Get the angle between two lines:
+        Line made from heel to toe, and from MidHip to Neck
+        :return:
+        """
+        # Get gradients
+        pt1 = self.fp2("LHeel", idx)
+        pt2 = self.fp2("LBigToe", idx)
+        try:
+            m1 = (pt1[1] - pt2[1])/(pt1[0] - pt2[0])
+        except ZeroDivisionError:
+            m1 = 99999999
+        pt3 = self.fp2("MidHip", idx)
+        pt4 = self.fp2("Neck", idx)
+        print([pt1,pt2,pt3,pt4])
+        try:
+            m2 = (pt3[1] - pt4[1])/(pt3[0] - pt4[0])
+        except ZeroDivisionError:
+            m2 = 99999999
+        angle = np.pi - abs(np.arctan(m1) - np.arctan(m2))
+        return np.degrees(angle)
+
+    def get_right_vector_angle(self, idx):
+        """
+        180 - abs(arctan(m1) - arctan(m2))
+        Get the angle between two lines:
+        Line made from heel to toe, and from MidHip to Neck
+        :return:
+        """
+        # Get gradients
+        pt1 = self.fp2("RHeel", idx)
+        pt2 = self.fp2("RBigToe", idx)
+        try:
+            m1 = (pt1[1] - pt2[1])/(pt1[0] - pt2[0])
+        except ZeroDivisionError:
+            m1 = 99999999
+        pt3 = self.fp2("MidHip", idx)
+        pt4 = self.fp2("Neck", idx)
+        try:
+            m2 = (pt3[1] - pt4[1])/(pt3[0] - pt4[0])
+        except ZeroDivisionError:
+            m2 = 99999999
+        angle = np.pi - abs(np.arctan(m1) - np.arctan(m2))
+        return np.degrees(angle)
+
     def angle_overlay(self):
         """
-        Creates overlay for distance
+        Creates overlay for angle between legs
         :return:
         """
         # Add overlay
@@ -433,7 +482,9 @@ class DisplayData:
         max_dist = 0
         min_dist = 999
         # Get max and min distances
+        sum = 0
         for dist in self.num_step_width:
+            sum += dist
             if dist > max_dist:
                 max_dist = dist
             if dist < min_dist:
@@ -441,6 +492,79 @@ class DisplayData:
         # self.gui.max_dist_label.setText("Max dist: {}".format(max_dist))
         # self.gui.min_dist_label.setText("Min dist: {}".format(min_dist))
         print(min_dist, max_dist)
+        self.gui.average_step_width_label.setText("Average step width: {}".format(sum/len(self.num_step_width)))
+
+    def foot_angle_overlay(self):
+        """
+        Creates overlay for angle between foot
+        :return:
+        """
+        # Add overlay
+        if not self.coronal_frame_list:
+            for idx, path in enumerate(self.data.coronal_input_files):
+                frame = cv2.imread(path)
+
+                frame = self.add_points_to_image(frame,
+                                                 [self.fp2("RHeel", idx), self.fp2("LHeel", idx), self.fp2("RBigToe", idx), self.fp2("LBigToe", idx)])
+
+                frame = self.add_line_between_points(frame,
+                                                     [self.fp2("LHeel", idx), self.fp2("LBigToe", idx)], 16)
+                frame = self.add_line_between_points(frame,
+                                                     [self.fp2("RHeel", idx), self.fp2("RBigToe", idx)], 16)
+                org = tuple([int(self.fp2("RBigToe", idx)[0]), int(self.fp2("RBigToe", idx)[1])])
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                fontscale = 1
+                color = (0, 0, 255)
+                thickness = 2
+                left_angle = self.get_left_vector_angle(idx)
+                right_angle = self.get_right_vector_angle(idx)
+                self.foot_angles.append("Frame {} - Left foot angle: {}".format(self.frame_number, left_angle))
+                self.foot_angles.append("Frame {} - Right foot angle: {}".format(self.frame_number, right_angle))
+                self.num_angles.append([left_angle, right_angle])
+                frame = cv2.putText(frame, 'Right angle: {}'.format(right_angle), org, font,
+                                    fontscale, color, thickness, cv2.LINE_AA)
+                self.frame_number += 1
+                # save_frame(frame)
+                self.coronal_frame_list.append(frame)
+        else:
+            temp_list = []
+            for idx, frame in enumerate(self.coronal_frame_list):
+                frame = self.add_points_to_image(frame,
+                                                 [self.fp2("RHeel", idx), self.fp2("LHeel", idx),
+                                                  self.fp2("RBigToe", idx), self.fp2("LBigToe", idx)])
+
+                frame = self.add_line_between_points(frame,
+                                                     [self.fp2("LHeel", idx), self.fp2("LBigToe", idx)], 16)
+                frame = self.add_line_between_points(frame,
+                                                     [self.fp2("RHeel", idx), self.fp2("RBigToe", idx)], 16)
+                org = tuple([int(self.fp2("RBigToe", idx)[0]), int(self.fp2("RBigToe", idx)[1])])
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                fontscale = 1
+                color = (0, 0, 255)
+                thickness = 2
+                left_angle = self.get_left_vector_angle(idx)
+                right_angle = self.get_right_vector_angle(idx)
+                self.foot_angles.append("Frame {} - Left foot angle: {}".format(self.frame_number, left_angle))
+                self.foot_angles.append("Frame {} - Right foot angle: {}".format(self.frame_number, right_angle))
+                self.num_angles.append([left_angle, right_angle])
+                frame = cv2.putText(frame, 'Right angle: {}'.format(right_angle), org, font,
+                                    fontscale, color, thickness, cv2.LINE_AA)
+                self.frame_number += 1
+                temp_list.append(frame)
+
+            self.coronal_frame_list = temp_list
+
+        if self.gui.foot_angle_checkbox == Qt.Checked:
+            print("Saving foot angles to text file")
+            self.save_text(self.foot_angles, "Foot Angle")
+        max_angle = 0
+        sum = 0
+        for an_angle in self.num_angles:
+            sum += an_angle[1]
+            if an_angle[1] > max_angle:
+                max_angle = an_angle[1]
+
+        #self.gui.angle_label.setText("Max Angle: {}".format(max_angle))
 
 
 class GUI(QMainWindow):
@@ -481,12 +605,14 @@ class GUI(QMainWindow):
         self.distance_checkbox = Qt.Unchecked
         self.angle_checkbox = Qt.Unchecked
 
-        self.step_width_checkbox()
+        self.create_step_width_checkbox()
         self.coronal_checkbox = Qt.Unchecked
+        self.foot_angle_checkbox = Qt.Unchecked
         self.plot_checkbox()
         self.trajectory_checkbox = Qt.Unchecked
 
         self.metric_labels()
+        self.create_average_step_width_label()
 
         self.progress_bar()
         self.progress_bar2()
@@ -523,7 +649,7 @@ class GUI(QMainWindow):
         self.movie_label2.setMovie(self.movie2)
 
         self.movie2.start()
-        self.grid2.addWidget(self.movie_label2, 0, 0)
+        self.grid2.addWidget(self.movie_label2, 0, 3)
 
     def start_Button(self):
 
@@ -551,6 +677,10 @@ class GUI(QMainWindow):
         if self.coronal_checkbox == Qt.Checked:
             start = 1
             self.display.display_step_width()
+
+        if self.foot_angle_checkbox == Qt.Checked:
+            start = 1
+            self.display.foot_angle_overlay()
 
         if start == 0:
             print("No option selected ! ")
@@ -608,6 +738,8 @@ class GUI(QMainWindow):
 
     def startbuttonclick2(self):
         if self.coronal_checkbox == Qt.Checked:
+            self.num_operations += 1
+        if self.foot_angle_checkbox == Qt.Checked:
             self.num_operations += 1
         if not self.calc:
             self.calc = External2(self)
@@ -708,19 +840,31 @@ class GUI(QMainWindow):
         temp_widget.setLayout(self.trajectory_layout)
         self.grid.addWidget(temp_widget, 1, 4)
 
-    def step_width_checkbox(self):
+    def create_average_step_width_label(self):
+        self.coronal_metrics_layout = QVBoxLayout()
+        self.average_step_width_label = QLabel("Average step width: ", self)
+        self.coronal_metrics_layout.addWidget(self.average_step_width_label)
+        temp_widget = QWidget()
+        temp_widget.setLayout(self.coronal_metrics_layout)
+        self.grid2.addWidget(temp_widget, 1, 0)
+
+
+    def create_step_width_checkbox(self):
         self.step_width_layout = QVBoxLayout()
-        self.step_width_label = QLabel("Step width: ", self)
+        self.step_width_label = QLabel("Select measurements: ", self)
         self.step_width_label.setAlignment(Qt.AlignBottom)
         self.step_width_layout.addWidget(self.step_width_label)
 
         box = QCheckBox("Get step width", self)
         box.stateChanged.connect(self.coronal_clickbox)
+        foot_angle_box = QCheckBox("Get foot angle")
+        foot_angle_box.stateChanged.connect(self.foot_angle_clickbox)
         self.step_width_layout.addWidget(box)
+        self.step_width_layout.addWidget(foot_angle_box)
 
         temp_widget = QWidget()
         temp_widget.setLayout(self.step_width_layout)
-        self.grid2.addWidget(temp_widget, 1, 4)
+        self.grid2.addWidget(temp_widget, 2, 4)
 
     def trajectory_clickbox(self, state):
         if state == Qt.Checked:
@@ -751,10 +895,19 @@ class GUI(QMainWindow):
 
         if state == Qt.Checked:
             self.coronal_checkbox = Qt.Checked
-            print('Distance Checked')
+            print('Step width Checked')
         else:
             self.coronal_checkbox = Qt.Unchecked
-            print('Distance Unchecked')
+            print('Step width Unchecked')
+
+    def foot_angle_clickbox(self, state):
+
+        if state == Qt.Checked:
+            self.foot_angle_checkbox = Qt.Checked
+            print('Foot angle Checked')
+        else:
+            self.foot_angle_checkbox = Qt.Unchecked
+            print('Foot angle Unchecked')
 
     def metric_labels(self):
         self.dist_layout = QVBoxLayout()
