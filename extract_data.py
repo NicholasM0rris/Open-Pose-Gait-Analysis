@@ -67,6 +67,8 @@ class ExtractData:
         self.get_data_files()
         self.get_data_frames()
         self.extract_frames()
+        self.interpolate_all_keypoints()
+        self.interpolate_all_coronal_keypoints()
 
     def print_keypoints(self, key_point=None):
         """
@@ -133,6 +135,83 @@ class ExtractData:
             self.input_files.append(filename)
         for filename in glob.glob("{}\\*.png".format(self.path_to_coronal_input)):
             self.coronal_input_files.append(filename)
+
+    def interpolate_all_keypoints(self):
+        """
+        Interpolate between points to remove 0,0 points not found by Open Pose
+        :return:
+        """
+        #print(self.key_points)
+        # Get the key to change points
+        for key in self.key_points.keys():
+            # Iterate through all items in key and check for bad values
+            for idx, item in enumerate(self.key_points[key]):
+                # If bad value
+               # print(idx, item, "TESTING", self.key_points[key], len(self.key_points[key])-1)
+                if item[0] == 0 and item[1] == 0:
+                    try:
+                        # First frame - need to extrapolate instead
+                        if idx == 0:
+                            item[0] = 2*self.key_points[key][idx+1][0] - self.key_points[key][idx+2][0]
+                            item[1] = 2 * self.key_points[key][idx + 1][1] - self.key_points[key][idx + 2][1]
+                        # Last frame - need to extrapolate
+                        elif idx == len(self.key_points[key])-1:
+                            item[0] = 2 * self.key_points[key][idx - 1][0] - self.key_points[key][idx - 2][0]
+                            item[1] = 2 * self.key_points[key][idx - 1][1] - self.key_points[key][idx - 2][1]
+                        # Else interpolate average of f-1 and f+1
+                        else:
+                            # print("Changing index {} item {} to ".format(idx, item))
+                            item[0] = (self.key_points[key][idx - 1][0] + self.key_points[key][idx + 1][0])/2
+                            item[1] = (self.key_points[key][idx - 1][1] + self.key_points[key][idx + 1][1])/2
+                            # print("this", item)
+                    except IndexError:
+                        print("Some index error in debugging . . . . . ")
+                        sys.exit()
+
+    def interpolate_all_coronal_keypoints(self):
+        """
+        Interpolate between points to remove 0,0 points not found by Open Pose
+        :return:
+        """
+        #print(self.key_points)
+        # Get the key to change points
+        for key in self.coronal_key_points.keys():
+            # Iterate through all items in key and check for bad values
+            for idx, item in enumerate(self.coronal_key_points[key]):
+                # If bad value
+               # print(idx, item, "TESTING", self.key_points[key], len(self.key_points[key])-1)
+                if item[0] == 0 and item[1] == 0:
+                    try:
+                        # First frame - need to extrapolate instead
+                        if idx == 0:
+                            item[0] = 2*self.coronal_key_points[key][idx+1][0] - self.coronal_key_points[key][idx+2][0]
+                            item[1] = 2 * self.coronal_key_points[key][idx + 1][1] - self.coronal_key_points[key][idx + 2][1]
+                        # Last frame - need to extrapolate
+                        elif idx == len(self.coronal_key_points[key])-1:
+                            item[0] = 2 * self.coronal_key_points[key][idx - 1][0] - self.coronal_key_points[key][idx - 2][0]
+                            item[1] = 2 * self.coronal_key_points[key][idx - 1][1] - self.coronal_key_points[key][idx - 2][1]
+                        # Else interpolate average of f-1 and f+1
+                        else:
+                            # print("Changing index {} item {} to ".format(idx, item))
+                            try:
+                                if self.coronal_key_points[key][idx + 1][0] == 0 and self.coronal_key_points[key][idx + 1][1] == 0:
+                                    item[0] = (self.coronal_key_points[key][idx - 1][0] +
+                                               self.coronal_key_points[key][idx + 2][0]) / 2
+                                    item[1] = (self.coronal_key_points[key][idx - 1][1] +
+                                               self.coronal_key_points[key][idx + 2][1]) / 2
+                                else:
+                                    item[0] = (self.coronal_key_points[key][idx - 1][0] + self.coronal_key_points[key][idx + 1][0])/2
+                                    item[1] = (self.coronal_key_points[key][idx - 1][1] + self.coronal_key_points[key][idx + 1][1])/2
+                            except IndexError:
+                                item[0] = (self.coronal_key_points[key][idx - 1][0] +
+                                           self.coronal_key_points[key][idx + 1][0]) / 2
+                                item[1] = (self.coronal_key_points[key][idx - 1][1] +
+                                           self.coronal_key_points[key][idx + 1][1]) / 2
+                            # print("this", item)
+                    except IndexError:
+                        print("Some index error in debugging . . . . . ")
+                        sys.exit()
+
 
 
 class DisplayData:
