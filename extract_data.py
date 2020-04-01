@@ -141,28 +141,28 @@ class ExtractData:
         Interpolate between points to remove 0,0 points not found by Open Pose
         :return:
         """
-        #print(self.key_points)
+        # print(self.key_points)
         # Get the key to change points
         for key in self.key_points.keys():
             # Iterate through all items in key and check for bad values
             for idx, item in enumerate(self.key_points[key]):
                 # If bad value
-               # print(idx, item, "TESTING", self.key_points[key], len(self.key_points[key])-1)
+                # print(idx, item, "TESTING", self.key_points[key], len(self.key_points[key])-1)
                 if item[0] == 0 and item[1] == 0:
                     try:
                         # First frame - need to extrapolate instead
                         if idx == 0:
-                            item[0] = 2*self.key_points[key][idx+1][0] - self.key_points[key][idx+2][0]
+                            item[0] = 2 * self.key_points[key][idx + 1][0] - self.key_points[key][idx + 2][0]
                             item[1] = 2 * self.key_points[key][idx + 1][1] - self.key_points[key][idx + 2][1]
                         # Last frame - need to extrapolate
-                        elif idx == len(self.key_points[key])-1:
+                        elif idx == len(self.key_points[key]) - 1:
                             item[0] = 2 * self.key_points[key][idx - 1][0] - self.key_points[key][idx - 2][0]
                             item[1] = 2 * self.key_points[key][idx - 1][1] - self.key_points[key][idx - 2][1]
                         # Else interpolate average of f-1 and f+1
                         else:
                             # print("Changing index {} item {} to ".format(idx, item))
-                            item[0] = (self.key_points[key][idx - 1][0] + self.key_points[key][idx + 1][0])/2
-                            item[1] = (self.key_points[key][idx - 1][1] + self.key_points[key][idx + 1][1])/2
+                            item[0] = (self.key_points[key][idx - 1][0] + self.key_points[key][idx + 1][0]) / 2
+                            item[1] = (self.key_points[key][idx - 1][1] + self.key_points[key][idx + 1][1]) / 2
                             # print("this", item)
                     except IndexError:
                         print("Some index error in debugging . . . . . ")
@@ -173,35 +173,42 @@ class ExtractData:
         Interpolate between points to remove 0,0 points not found by Open Pose
         :return:
         """
-        #print(self.key_points)
+        # print(self.key_points)
         # Get the key to change points
         for key in self.coronal_key_points.keys():
             # Iterate through all items in key and check for bad values
             for idx, item in enumerate(self.coronal_key_points[key]):
                 # If bad value
-               # print(idx, item, "TESTING", self.key_points[key], len(self.key_points[key])-1)
+                # print(idx, item, "TESTING", self.key_points[key], len(self.key_points[key])-1)
                 if item[0] == 0 and item[1] == 0:
                     try:
                         # First frame - need to extrapolate instead
                         if idx == 0:
-                            item[0] = 2*self.coronal_key_points[key][idx+1][0] - self.coronal_key_points[key][idx+2][0]
-                            item[1] = 2 * self.coronal_key_points[key][idx + 1][1] - self.coronal_key_points[key][idx + 2][1]
+                            item[0] = 2 * self.coronal_key_points[key][idx + 1][0] - \
+                                      self.coronal_key_points[key][idx + 2][0]
+                            item[1] = 2 * self.coronal_key_points[key][idx + 1][1] - \
+                                      self.coronal_key_points[key][idx + 2][1]
                         # Last frame - need to extrapolate
-                        elif idx == len(self.coronal_key_points[key])-1:
-                            item[0] = 2 * self.coronal_key_points[key][idx - 1][0] - self.coronal_key_points[key][idx - 2][0]
-                            item[1] = 2 * self.coronal_key_points[key][idx - 1][1] - self.coronal_key_points[key][idx - 2][1]
+                        elif idx == len(self.coronal_key_points[key]) - 1:
+                            item[0] = 2 * self.coronal_key_points[key][idx - 1][0] - \
+                                      self.coronal_key_points[key][idx - 2][0]
+                            item[1] = 2 * self.coronal_key_points[key][idx - 1][1] - \
+                                      self.coronal_key_points[key][idx - 2][1]
                         # Else interpolate average of f-1 and f+1
                         else:
                             # print("Changing index {} item {} to ".format(idx, item))
                             try:
-                                if self.coronal_key_points[key][idx + 1][0] == 0 and self.coronal_key_points[key][idx + 1][1] == 0:
+                                if self.coronal_key_points[key][idx + 1][0] == 0 and \
+                                        self.coronal_key_points[key][idx + 1][1] == 0:
                                     item[0] = (self.coronal_key_points[key][idx - 1][0] +
                                                self.coronal_key_points[key][idx + 2][0]) / 2
                                     item[1] = (self.coronal_key_points[key][idx - 1][1] +
                                                self.coronal_key_points[key][idx + 2][1]) / 2
                                 else:
-                                    item[0] = (self.coronal_key_points[key][idx - 1][0] + self.coronal_key_points[key][idx + 1][0])/2
-                                    item[1] = (self.coronal_key_points[key][idx - 1][1] + self.coronal_key_points[key][idx + 1][1])/2
+                                    item[0] = (self.coronal_key_points[key][idx - 1][0] +
+                                               self.coronal_key_points[key][idx + 1][0]) / 2
+                                    item[1] = (self.coronal_key_points[key][idx - 1][1] +
+                                               self.coronal_key_points[key][idx + 1][1]) / 2
                             except IndexError:
                                 item[0] = (self.coronal_key_points[key][idx - 1][0] +
                                            self.coronal_key_points[key][idx + 1][0]) / 2
@@ -213,10 +220,13 @@ class ExtractData:
                         sys.exit()
 
 
-
 class DisplayData:
 
     def __init__(self, data):
+        self.right_foot_count = 0
+        self.left_foot_count = 0
+        self.right_foot_index = []
+        self.left_foot_index = []
         self.data = data
         self.keypoint1 = "LBigToe"
         self.keypoint2 = "RBigToe"
@@ -233,6 +243,7 @@ class DisplayData:
         self.frame_list = []
         self.coronal_frame_list = []
         self.frame_number = 1
+        self.get_number_steps()
 
     def plot_points(self, keypoint):
         frame = cv2.imread(self.data.input_files[0])
@@ -405,14 +416,14 @@ class DisplayData:
         pt1 = self.fp2("LHeel", idx)
         pt2 = self.fp2("LBigToe", idx)
         try:
-            m1 = (pt1[1] - pt2[1])/(pt1[0] - pt2[0])
+            m1 = (pt1[1] - pt2[1]) / (pt1[0] - pt2[0])
         except ZeroDivisionError:
             m1 = 99999999
         pt3 = self.fp2("MidHip", idx)
         pt4 = self.fp2("Neck", idx)
-        print([pt1,pt2,pt3,pt4])
+        print([pt1, pt2, pt3, pt4])
         try:
-            m2 = (pt3[1] - pt4[1])/(pt3[0] - pt4[0])
+            m2 = (pt3[1] - pt4[1]) / (pt3[0] - pt4[0])
         except ZeroDivisionError:
             m2 = 99999999
         angle = np.pi - abs(np.arctan(m1) - np.arctan(m2))
@@ -429,13 +440,13 @@ class DisplayData:
         pt1 = self.fp2("RHeel", idx)
         pt2 = self.fp2("RBigToe", idx)
         try:
-            m1 = (pt1[1] - pt2[1])/(pt1[0] - pt2[0])
+            m1 = (pt1[1] - pt2[1]) / (pt1[0] - pt2[0])
         except ZeroDivisionError:
             m1 = 99999999
         pt3 = self.fp2("MidHip", idx)
         pt4 = self.fp2("Neck", idx)
         try:
-            m2 = (pt3[1] - pt4[1])/(pt3[0] - pt4[0])
+            m2 = (pt3[1] - pt4[1]) / (pt3[0] - pt4[0])
         except ZeroDivisionError:
             m2 = 99999999
         angle = np.pi - abs(np.arctan(m1) - np.arctan(m2))
@@ -571,7 +582,7 @@ class DisplayData:
         # self.gui.max_dist_label.setText("Max dist: {}".format(max_dist))
         # self.gui.min_dist_label.setText("Min dist: {}".format(min_dist))
         print(min_dist, max_dist)
-        self.gui.average_step_width_label.setText("Average step width: {}".format(sum/len(self.num_step_width)))
+        self.gui.average_step_width_label.setText("Average step width: {}".format(sum / len(self.num_step_width)))
 
     def foot_angle_overlay(self):
         """
@@ -584,7 +595,8 @@ class DisplayData:
                 frame = cv2.imread(path)
 
                 frame = self.add_points_to_image(frame,
-                                                 [self.fp2("RHeel", idx), self.fp2("LHeel", idx), self.fp2("RBigToe", idx), self.fp2("LBigToe", idx)])
+                                                 [self.fp2("RHeel", idx), self.fp2("LHeel", idx),
+                                                  self.fp2("RBigToe", idx), self.fp2("LBigToe", idx)])
 
                 frame = self.add_line_between_points(frame,
                                                      [self.fp2("LHeel", idx), self.fp2("LBigToe", idx)], 16)
@@ -643,7 +655,129 @@ class DisplayData:
             if an_angle[1] > max_angle:
                 max_angle = an_angle[1]
 
-        #self.gui.angle_label.setText("Max Angle: {}".format(max_angle))
+        # self.gui.angle_label.setText("Max Angle: {}".format(max_angle))
+
+    def get_number_steps(self):
+        """
+        Direction 1: left
+        direction 2: right
+        :return:
+        """
+        right_direction = 0
+        left_direction = 0
+        x1_r = self.fp("RHeel", 0)[0]
+        x2_r = self.fp("RHeel", 1)[0]
+        if x1_r > x2_r:
+            right_direction = 1
+        elif x1_r < x2_r:
+            right_direction = 2
+
+        x1_left = self.fp("LHeel", 0)[0]
+        x2_left = self.fp("LHeel", 1)[0]
+        if x1_left > x2_left:
+            left_direction = 1
+        elif x1_left < x2_left:
+            left_direction = 2
+        print("init left direction", left_direction, x1_left, x2_left)
+
+        for idx, path in enumerate(self.data.input_files):
+            try:
+                x1_r = self.fp("RHeel", idx)[0]
+                x2_r = self.fp("RHeel", idx + 1)[0]
+                if x1_r > x2_r:
+                    if right_direction == 2:
+                        # If moving right, and now moving left
+                        self.right_foot_count += 1
+                        self.right_foot_index.append(idx)
+                    # Set direction to left
+                    right_direction = 1
+
+                elif x1_r < x2_r:
+                    if right_direction == 1:
+                        # If moving left, and now moving right
+                        pass  # self.right_foot_count += 1
+                    right_direction = 2
+                else:
+                    right_direction = 0
+                print(x1_r, x2_r, idx, right_direction, self.right_foot_count)
+
+                ##############################################
+                x1_left = self.fp("LHeel", idx)[0]
+                x2_left = self.fp("LHeel", idx + 1)[0]
+                """
+                if idx == 8:
+                    print(left_direction, x1_left, x2_left)
+                    sys.exit()
+                """
+                if x1_left > x2_left:
+                    if left_direction == 2:
+                        # If moving right, and now moving left
+                        self.left_foot_count += 1
+                        self.left_foot_index.append(idx)
+                    # Set direction to left
+                    left_direction = 1
+
+                elif x1_left < x2_left:
+                    if left_direction == 1:
+                        # If moving left, and now moving right
+                        pass  # self.left_foot_count += 1
+
+                    left_direction = 2
+
+            except IndexError:
+                print(self.left_foot_count, self.right_foot_count)
+                print(self.left_foot_index)
+                pass
+        # print(self.left_foot_count, right_foot_count)
+        # print(self.data.input_files)
+
+    def display_step_number_overlay(self):
+
+        """
+        Creates overlay for step number
+        :return:
+        """
+        org = (100, 100)
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        fontscale = 1
+        color = (0, 0, 255)
+        thickness = 2
+        left_foot_count = 0
+        right_foot_count = 0
+        # Add overlay
+        if not self.frame_list:
+            for idx, path in enumerate(self.data.input_files):
+                if idx in self.left_foot_index:
+                    left_foot_count += 1
+                if idx in self.right_foot_index:
+                    right_foot_count += 1
+                frame = cv2.imread(path)
+                frame = cv2.putText(frame, 'Number of right steps: {}'.format(right_foot_count), org, font,
+                                    fontscale, color, thickness, cv2.LINE_AA)
+                frame = cv2.putText(frame, 'Number of left steps: {}'.format(left_foot_count), (100, 50), font,
+                                    fontscale, color, thickness, cv2.LINE_AA)
+                frame = cv2.putText(frame, 'Frame count: {}'.format(idx), (100, 150), font,
+                                    fontscale, color, thickness, cv2.LINE_AA)
+                self.frame_number += 1
+                self.frame_list.append(frame)
+        else:
+            temp_list = []
+
+            for idx, frame in enumerate(self.frame_list):
+                if idx in self.left_foot_index:
+                    left_foot_count += 1
+                if idx in self.right_foot_index:
+                    right_foot_count += 1
+                frame = cv2.putText(frame, 'Number of right steps: {}'.format(right_foot_count), org, font,
+                                    fontscale, color, thickness, cv2.LINE_AA)
+                frame = cv2.putText(frame, 'Number of left steps: {}'.format(left_foot_count), (100,50), font,
+                                    fontscale, color, thickness, cv2.LINE_AA)
+                frame = cv2.putText(frame, 'Frame count: {}'.format(idx), (100, 150), font,
+                                    fontscale, color, thickness, cv2.LINE_AA)
+                self.frame_number += 1
+                temp_list.append(frame)
+
+            self.frame_list = temp_list
 
 
 class GUI(QMainWindow):
@@ -805,6 +939,7 @@ class GUI(QMainWindow):
             msg.setIcon(QMessageBox.Information)
             x = msg.exec_()
         else:
+            self.display.display_step_number_overlay()
             for frame in self.display.frame_list:
                 save_frame(frame)
             save_video()
@@ -926,7 +1061,6 @@ class GUI(QMainWindow):
         temp_widget = QWidget()
         temp_widget.setLayout(self.coronal_metrics_layout)
         self.grid2.addWidget(temp_widget, 1, 0)
-
 
     def create_step_width_checkbox(self):
         self.step_width_layout = QVBoxLayout()
