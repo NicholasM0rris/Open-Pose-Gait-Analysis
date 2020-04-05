@@ -225,24 +225,40 @@ class DisplayData:
     def __init__(self, data):
         self.right_foot_count = 0
         self.left_foot_count = 0
+        # Define list for index/frames in which step is made
         self.right_foot_index = []
         self.left_foot_index = []
         self.data = data
+        # initial keypoints for distance
         self.keypoint1 = "LBigToe"
         self.keypoint2 = "RBigToe"
         self.gui = None
+        # define distances
         self.distances = []
         self.distances.append("Distance from {} to {}".format(self.keypoint1, self.keypoint2))
         self.num_distances = []
+        # Define angles made between two legs at the waist
         self.angles = []
         self.num_angles = []
+        # Define angles made between legs and torso
+        self.leg_body_angles = []
+        self.num_leg_body_angles = []
+        # define angles made at knee joint
+        self.right_knee_angles = []
+        self.num_right_knee_angles = []
+        self.left_knee_angles = []
+        self.num_left_knee_angles = []
+        # Define step width between heels
         self.step_width = []
         self.num_step_width = []
+        # Define angles between heel, big toe and the torso allignment
         self.foot_angles = []
         self.num_foot_angles = []
+        # Frame lists
         self.frame_list = []
         self.coronal_frame_list = []
         self.frame_number = 1
+        # Get number of steps
         self.get_number_steps()
 
     def plot_points(self, keypoint):
@@ -401,9 +417,15 @@ class DisplayData:
         """
         a = (p1[0] - p2[0], p1[1] - p2[1])
         b = (p1[0] - p3[0], p1[1] - p3[1])
-        angle = np.arccos(np.dot(a, b) / (get_mag(a) * get_mag(b)))
+        numerator = np.dot(a, b)
+        denominator = (get_mag(a) * get_mag(b))
+        angle = np.arccos(numerator / denominator)
         print("ANGLE", angle)
-        return np.degrees(angle)
+
+        # Convert to degrees
+        angle = np.degrees(angle)
+
+        return angle
 
     def get_left_vector_angle(self, idx):
         """
@@ -454,7 +476,7 @@ class DisplayData:
 
     def angle_overlay(self):
         """
-        Creates overlay for angle between legs
+        Creates overlay for angle between legs from the hips
         :return:
         """
         # Add overlay
@@ -514,9 +536,178 @@ class DisplayData:
 
         self.gui.angle_label.setText("Max Angle: {}".format(max_angle))
 
+    def leg_body_angle_overlay(self):
+        """
+        Creates overlay for angle between legs from the hips
+        :return:
+        """
+        # Add overlay
+        if not self.frame_list:
+            for idx, path in enumerate(self.data.input_files):
+                frame = cv2.imread(path)
+                frame = self.add_points_to_image(frame,
+                                                 [self.fp("RKnee", idx), self.fp("Neck", idx), self.fp("MidHip", idx)])
+                frame = self.add_line_between_points(frame,
+                                                     [self.fp("RKnee", idx), self.fp("MidHip", idx)], 16)
+                frame = self.add_line_between_points(frame,
+                                                     [self.fp("Neck", idx), self.fp("MidHip", idx)], 16)
+                org = tuple([int(self.fp("MidHip", idx)[0]), int(self.fp("MidHip", idx)[1])])
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                fontscale = 1
+                color = (0, 0, 255)
+                thickness = 2
+                angle = self.get_angle(self.fp("Neck", idx), self.fp("RKnee", idx), self.fp("MidHip", idx))
+                self.leg_body_angles.append("Frame {} - Angle: {}".format(self.frame_number, angle))
+                self.num_leg_body_angles.append(angle)
+                frame = cv2.putText(frame, 'Angle: {}'.format(angle), org, font,
+                                    fontscale, color, thickness, cv2.LINE_AA)
+                self.frame_number += 1
+                # save_frame(frame)
+                self.frame_list.append(frame)
+        else:
+            temp_list = []
+            for idx, frame in enumerate(self.frame_list):
+                frame = self.add_points_to_image(frame,
+                                                 [self.fp("RKnee", idx), self.fp("Neck", idx), self.fp("MidHip", idx)])
+                frame = self.add_line_between_points(frame,
+                                                     [self.fp("RKnee", idx), self.fp("MidHip", idx)], 16)
+                frame = self.add_line_between_points(frame,
+                                                     [self.fp("Neck", idx), self.fp("MidHip", idx)], 16)
+                org = tuple([int(self.fp("MidHip", idx)[0]), int(self.fp("MidHip", idx)[1])])
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                fontscale = 1
+                color = (0, 0, 255)
+                thickness = 2
+                angle = self.get_angle(self.fp("Neck", idx), self.fp("RKnee", idx), self.fp("MidHip", idx))
+                self.leg_body_angles.append("Frame {} - Angle: {}".format(self.frame_number, angle))
+                self.num_leg_body_angles.append(angle)
+                frame = cv2.putText(frame, 'Angle: {}'.format(angle), org, font,
+                                    fontscale, color, thickness, cv2.LINE_AA)
+                self.frame_number += 1
+                temp_list.append(frame)
+
+            self.frame_list = temp_list
+
+        if self.gui.leg_angle_body_checkbox == Qt.Checked:
+            print("Saving angles to text file")
+            self.save_text(self.leg_body_angles, "Angle")
+
+    def right_knee_angle_overlay(self):
+        """
+        Creates overlay for angle between legs from the hips
+        :return:
+        """
+        # Add overlay
+        if not self.frame_list:
+            for idx, path in enumerate(self.data.input_files):
+                frame = cv2.imread(path)
+                frame = self.add_points_to_image(frame,
+                                                 [self.fp("RKnee", idx), self.fp("RHeel", idx), self.fp("RHip", idx)])
+                frame = self.add_line_between_points(frame,
+                                                     [self.fp("RKnee", idx), self.fp("MidHip", idx)], 16)
+                frame = self.add_line_between_points(frame,
+                                                     [self.fp("RHeel", idx), self.fp("RKnee", idx)], 16)
+                org = tuple([int(self.fp("RKnee", idx)[0]), int(self.fp("RKnee", idx)[1])])
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                fontscale = 1
+                color = (0, 0, 255)
+                thickness = 2
+                angle = self.get_angle(self.fp("RHeel", idx), self.fp("RHip", idx), self.fp("RKnee", idx))
+                self.right_knee_angles.append("Frame {} - Angle: {}".format(self.frame_number, angle))
+                self.num_right_knee_angles.append(angle)
+                frame = cv2.putText(frame, 'Angle: {}'.format(angle), org, font,
+                                    fontscale, color, thickness, cv2.LINE_AA)
+                self.frame_number += 1
+                # save_frame(frame)
+                self.frame_list.append(frame)
+        else:
+            temp_list = []
+            for idx, frame in enumerate(self.frame_list):
+                frame = self.add_points_to_image(frame,
+                                                 [self.fp("RKnee", idx), self.fp("RHeel", idx), self.fp("RHip", idx)])
+                frame = self.add_line_between_points(frame,
+                                                     [self.fp("RKnee", idx), self.fp("RHip", idx)], 16)
+                frame = self.add_line_between_points(frame,
+                                                     [self.fp("RHeel", idx), self.fp("RKnee", idx)], 16)
+                org = tuple([int(self.fp("RKnee", idx)[0]), int(self.fp("RKnee", idx)[1])])
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                fontscale = 1
+                color = (0, 0, 255)
+                thickness = 2
+                angle = self.get_angle(self.fp("RHeel", idx), self.fp("RHip", idx), self.fp("RKnee", idx))
+                self.right_knee_angles.append("Frame {} - Angle: {}".format(self.frame_number, angle))
+                self.num_right_knee_angles.append(angle)
+                frame = cv2.putText(frame, 'Angle: {}'.format(angle), org, font,
+                                    fontscale, color, thickness, cv2.LINE_AA)
+                self.frame_number += 1
+                temp_list.append(frame)
+
+            self.frame_list = temp_list
+
+        if self.gui.right_knee_angle_checkbox == Qt.Checked:
+            print("Saving angles to text file")
+            self.save_text(self.right_knee_angles, "Angle")
+
+    def left_knee_angle_overlay(self):
+        """
+        Creates overlay for angle between legs from the hips
+        :return:
+        """
+        # Add overlay
+        if not self.frame_list:
+            for idx, path in enumerate(self.data.input_files):
+                frame = cv2.imread(path)
+                frame = self.add_points_to_image(frame,
+                                                 [self.fp("LKnee", idx), self.fp("LHeel", idx), self.fp("LHip", idx)])
+                frame = self.add_line_between_points(frame,
+                                                     [self.fp("LKnee", idx), self.fp("LHip", idx)], 16)
+                frame = self.add_line_between_points(frame,
+                                                     [self.fp("LHeel", idx), self.fp("LKnee", idx)], 16)
+                org = tuple([int(self.fp("LKnee", idx)[0]), int(self.fp("LKnee", idx)[1])])
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                fontscale = 1
+                color = (0, 0, 255)
+                thickness = 2
+                angle = self.get_angle(self.fp("LHeel", idx), self.fp("LHip", idx), self.fp("LKnee", idx))
+                self.left_knee_angles.append("Frame {} - Angle: {}".format(self.frame_number, angle))
+                self.num_left_knee_angles.append(angle)
+                frame = cv2.putText(frame, 'Angle: {}'.format(angle), org, font,
+                                    fontscale, color, thickness, cv2.LINE_AA)
+                self.frame_number += 1
+                # save_frame(frame)
+                self.frame_list.append(frame)
+        else:
+            temp_list = []
+            for idx, frame in enumerate(self.frame_list):
+                frame = self.add_points_to_image(frame,
+                                                 [self.fp("LKnee", idx), self.fp("LHeel", idx), self.fp("LHip", idx)])
+                frame = self.add_line_between_points(frame,
+                                                     [self.fp("LKnee", idx), self.fp("LHip", idx)], 16)
+                frame = self.add_line_between_points(frame,
+                                                     [self.fp("LHeel", idx), self.fp("LKnee", idx)], 16)
+                org = tuple([int(self.fp("LKnee", idx)[0]), int(self.fp("LKnee", idx)[1])])
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                fontscale = 1
+                color = (0, 0, 255)
+                thickness = 2
+                angle = self.get_angle(self.fp("LHeel", idx), self.fp("LHip", idx), self.fp("LKnee", idx))
+                self.left_knee_angles.append("Frame {} - Angle: {}".format(self.frame_number, angle))
+                self.num_left_knee_angles.append(angle)
+                frame = cv2.putText(frame, 'Angle: {}'.format(angle), org, font,
+                                    fontscale, color, thickness, cv2.LINE_AA)
+                self.frame_number += 1
+                temp_list.append(frame)
+
+            self.frame_list = temp_list
+
+        if self.gui.left_knee_angle_checkbox == Qt.Checked:
+            print("Saving angles to text file")
+            self.save_text(self.left_knee_angles, "Angle")
+
     def get_step_width(self, index):
         """
         Get the coronal plane step width distances
+        :param index: The frame index to retreive the points from
         :return:
         """
         return abs(self.fp2("RHeel", index)[0] - self.fp2("LHeel", index)[0])
@@ -817,6 +1008,9 @@ class GUI(QMainWindow):
         self.print_option_checkbox()
         self.distance_checkbox = Qt.Unchecked
         self.angle_checkbox = Qt.Unchecked
+        self.leg_angle_body_checkbox = Qt.Unchecked
+        self.left_knee_angle_checkbox = Qt.Unchecked
+        self.right_knee_angle_checkbox = Qt.Unchecked
 
         self.create_step_width_checkbox()
         self.coronal_checkbox = Qt.Unchecked
@@ -927,6 +1121,18 @@ class GUI(QMainWindow):
             start = 1
             self.display.angle_overlay()
 
+        if self.leg_angle_body_checkbox == Qt.Checked:
+            start = 1
+            self.display.leg_body_angle_overlay()
+
+        if self.left_knee_angle_checkbox == Qt.Checked:
+            start = 1
+            self.display.left_knee_angle_overlay()
+
+        if self.right_knee_angle_checkbox == Qt.Checked:
+            start = 1
+            self.display.right_knee_angle_overlay()
+
         if self.trajectory_checkbox == Qt.Checked:
             start = 1
             self.display.plot_points("RBigToe")
@@ -966,6 +1172,12 @@ class GUI(QMainWindow):
         if self.angle_checkbox == Qt.Checked:
             self.num_operations += 1
         if self.distance_checkbox == Qt.Checked:
+            self.num_operations += 1
+        if self.leg_angle_body_checkbox == Qt.Checked:
+            self.num_operations += 1
+        if self.left_knee_angle_checkbox == Qt.Checked:
+            self.num_operations += 1
+        if self.right_knee_angle_checkbox == Qt.Checked:
             self.num_operations += 1
         if not self.calc:
             self.calc = External(self)
@@ -1037,6 +1249,19 @@ class GUI(QMainWindow):
         box_angle = QCheckBox("Angle", self)
         box_angle.stateChanged.connect(self.angle_clickbox)
         self.checkbox_layout.addWidget(box_angle)
+
+        leg_body_angle_checkbox = QCheckBox("Leg body angle", self)
+        leg_body_angle_checkbox.stateChanged.connect(self.leg_body_angle_clickbox)
+        self.checkbox_layout.addWidget(leg_body_angle_checkbox)
+
+        right_knee_angle_checkbox = QCheckBox("Right knee angle", self)
+        right_knee_angle_checkbox.stateChanged.connect(self.right_knee_angle_clickbox)
+        self.checkbox_layout.addWidget(right_knee_angle_checkbox)
+
+        left_knee_angle_checkbox = QCheckBox("Left knee angle", self)
+        left_knee_angle_checkbox.stateChanged.connect(self.left_knee_angle_clickbox)
+        self.checkbox_layout.addWidget(left_knee_angle_checkbox)
+
         temp_widget = QWidget()
         temp_widget.setLayout(self.checkbox_layout)
         self.grid.addWidget(temp_widget, 1, 0)
@@ -1094,6 +1319,30 @@ class GUI(QMainWindow):
         else:
             self.angle_checkbox = Qt.Unchecked
             print('Angle Unchecked')
+
+    def leg_body_angle_clickbox(self, state):
+        if state == Qt.Checked:
+            self.leg_angle_body_checkbox = Qt.Checked
+            print('leg body Angle Checked')
+        else:
+            self.leg_angle_body_checkbox = Qt.Unchecked
+            print('leg body Angle Unchecked')
+
+    def right_knee_angle_clickbox(self, state):
+        if state == Qt.Checked:
+            self.right_knee_angle_checkbox = Qt.Checked
+            print('right knee Angle Checked')
+        else:
+            self.right_knee_angle_checkbox = Qt.Unchecked
+            print('Right knee Angle Unchecked')
+
+    def left_knee_angle_clickbox(self, state):
+        if state == Qt.Checked:
+            self.left_knee_angle_checkbox = Qt.Checked
+            print('left knee Angle Checked')
+        else:
+            self.left_knee_angle_checkbox = Qt.Unchecked
+            print('left knee Angle Unchecked')
 
     def distance_clickbox(self, state):
 
