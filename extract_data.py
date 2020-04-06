@@ -1,4 +1,5 @@
 import os
+from os import startfile
 import sys
 import glob
 import json
@@ -1149,12 +1150,18 @@ class GUI(QMainWindow):
             for frame in self.display.frame_list:
                 save_frame(frame)
             save_video()
-            print("Process complete ! ")
-            msg = QMessageBox()
-            msg.setWindowTitle("Operation complete ! ")
-            msg.setText("The operations have successfully finished ! ")
-            msg.setIcon(QMessageBox.Information)
-            x = msg.exec_()
+            self.process_complete_messagebox()
+
+    def process_complete_messagebox(self):
+        print("Process complete ! ")
+        msg = QMessageBox.question(self, "The operations have successfully finished ! ", "Do you want to preview the output video?", QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel, QMessageBox.Cancel)
+        if msg == QMessageBox.Yes:
+            my_path = os.path.abspath(os.path.dirname(__file__))
+            path = os.path.join(my_path, "processed_video\\Output.avi")
+            # print("DIRNAME", path, my_path)
+            startfile(path)
+        else:
+            pass
 
     def startbuttonclick2(self):
         if self.coronal_checkbox == Qt.Checked:
