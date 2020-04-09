@@ -9,7 +9,7 @@ import numpy as np
 from collections import defaultdict
 import argparse
 from PyQt5.QtWidgets import *
-from PyQt5.QtCore import Qt, QThread
+from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 import time
 import matplotlib.pyplot as plt
@@ -962,7 +962,7 @@ class DisplayData:
                     right_foot_count += 1
                 frame = cv2.putText(frame, 'Number of right steps: {}'.format(right_foot_count), org, font,
                                     fontscale, color, thickness, cv2.LINE_AA)
-                frame = cv2.putText(frame, 'Number of left steps: {}'.format(left_foot_count), (100,50), font,
+                frame = cv2.putText(frame, 'Number of left steps: {}'.format(left_foot_count), (100, 50), font,
                                     fontscale, color, thickness, cv2.LINE_AA)
                 frame = cv2.putText(frame, 'Frame count: {}'.format(idx), (100, 150), font,
                                     fontscale, color, thickness, cv2.LINE_AA)
@@ -1075,86 +1075,36 @@ class GUI(QMainWindow):
         self.start_button2.clicked.connect(self.start_button_functions2)
         self.grid2.addWidget(self.start_button2, 3, 6)
 
+    @pyqtSlot()
     def start_button_functions2(self):
-        # Remove any current images in output file
-        files = glob.glob("{}\\*.png".format("output_coronal_images"))
-        for f in files:
-            os.remove(f)
-        start = 0
+        self.worker_thread2 = Worker2(self)
+        self.worker_thread2.finished.connect(self.process_complete_messagebox2)
+        self.worker_thread2.start()
+        self.worker_thread2.start_signal2.connect(self.no_option_messagebox)
 
-        if self.coronal_checkbox == Qt.Checked:
-            start = 1
-            self.display.display_step_width()
-
-        if self.foot_angle_checkbox == Qt.Checked:
-            start = 1
-            self.display.foot_angle_overlay()
-
-        if start == 0:
-            print("No option selected ! ")
-            msg = QMessageBox()
-            msg.setWindowTitle("Whoops ! ")
-            msg.setText("No options were selected ! ")
-            msg.setIcon(QMessageBox.Information)
-            x = msg.exec_()
-        else:
-            for frame in self.display.coronal_frame_list:
-                save_frame2(frame)
-            save_video2()
-            print("Process complete ! ")
-            msg = QMessageBox()
-            msg.setWindowTitle("Operation complete ! ")
-            msg.setText("The operations have successfully finished ! ")
-            msg.setIcon(QMessageBox.Information)
-            x = msg.exec_()
-
+    @pyqtSlot()
     def start_button_functions(self):
         # Remove any current images in output file
-        files = glob.glob("{}\\*.png".format("output_images"))
-        for f in files:
-            os.remove(f)
-        start = 0
-        if self.distance_checkbox == Qt.Checked:
-            start = 1
-            self.display.distance_overlay()
+        self.worker_thread = Worker(self)
+        self.worker_thread.finished.connect(self.process_complete_messagebox)
+        self.worker_thread.start()
+        self.worker_thread.start_signal.connect(self.no_option_messagebox)
 
-        if self.angle_checkbox == Qt.Checked:
-            start = 1
-            self.display.angle_overlay()
+    @pyqtSlot()
+    def no_option_messagebox(self):
+        print("No option selected ! ")
+        msg = QMessageBox()
+        msg.setWindowTitle("Whoops ! ")
+        msg.setText("No options were selected ! ")
+        msg.setIcon(QMessageBox.Information)
+        x = msg.exec_()
 
-        if self.leg_angle_body_checkbox == Qt.Checked:
-            start = 1
-            self.display.leg_body_angle_overlay()
-
-        if self.left_knee_angle_checkbox == Qt.Checked:
-            start = 1
-            self.display.left_knee_angle_overlay()
-
-        if self.right_knee_angle_checkbox == Qt.Checked:
-            start = 1
-            self.display.right_knee_angle_overlay()
-
-        if self.trajectory_checkbox == Qt.Checked:
-            start = 1
-            self.display.plot_points("RBigToe")
-
-        if start == 0:
-            print("No option selected ! ")
-            msg = QMessageBox()
-            msg.setWindowTitle("Whoops ! ")
-            msg.setText("No options were selected ! ")
-            msg.setIcon(QMessageBox.Information)
-            x = msg.exec_()
-        else:
-            self.display.display_step_number_overlay()
-            for frame in self.display.frame_list:
-                save_frame(frame)
-            save_video()
-            self.process_complete_messagebox()
-
+    @pyqtSlot()
     def process_complete_messagebox(self):
         print("Process complete ! ")
-        msg = QMessageBox.question(self, "The operations have successfully finished ! ", "Do you want to preview the output video?", QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel, QMessageBox.Cancel)
+        msg = QMessageBox.question(self, "The operations have successfully finished ! ",
+                                   "Do you want to preview the output video?",
+                                   QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel, QMessageBox.Cancel)
         if msg == QMessageBox.Yes:
             my_path = os.path.abspath(os.path.dirname(__file__))
             path = os.path.join(my_path, "processed_video\\Output.avi")
@@ -1163,6 +1113,22 @@ class GUI(QMainWindow):
         else:
             pass
 
+    @pyqtSlot()
+    def process_complete_messagebox2(self):
+        print("Process complete ! ")
+        msg = QMessageBox.question(self, "The operations have successfully finished ! ",
+                                   "Do you want to preview the output video?",
+                                   QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel, QMessageBox.Cancel)
+        if msg == QMessageBox.Yes:
+            my_path = os.path.abspath(os.path.dirname(__file__))
+            path = os.path.join(my_path, "processed_video\\Coronal_Output.avi")
+            # print("DIRNAME", path, my_path)
+            startfile(path)
+        else:
+            pass
+
+    pyqtSlot()
+
     def startbuttonclick2(self):
         if self.coronal_checkbox == Qt.Checked:
             self.num_operations += 1
@@ -1170,6 +1136,10 @@ class GUI(QMainWindow):
             self.num_operations += 1
         if not self.calc:
             self.calc = External2(self)
+            self.calc.mySignal2.connect(self.onCountChanged2)
+            self.calc.start()
+
+
         else:
             print("set counter to 0")
             self.calc.progress = 0
@@ -1188,6 +1158,8 @@ class GUI(QMainWindow):
             self.num_operations += 1
         if not self.calc:
             self.calc = External(self)
+            self.calc.mySignal.connect(self.onCountChanged)
+            self.calc.start()
         else:
             print("set counter to 0")
             self.calc.progress = 0
@@ -1403,9 +1375,11 @@ class GUI(QMainWindow):
         self.progress2.setMaximum(100)
         self.grid2.addWidget(self.progress2, 4, 0)
 
+    @pyqtSlot(int)
     def onCountChanged(self, value):
         self.progress.setValue(value)
 
+    @pyqtSlot(int)
     def onCountChanged2(self, value):
         self.progress2.setValue(value)
 
@@ -1417,43 +1391,54 @@ class External(QThread):
     """
     Runs a counter thread.
     """
+    mySignal = pyqtSignal(int)
 
     def __init__(self, gui):
         super(External, self).__init__()
         self.gui = gui
+        # Set number operations to one to avoid divide by 0 error
         if self.gui.num_operations == 0:
             num_operations = 1
         else:
             num_operations = self.gui.num_operations
+        # Get number of files to be operated on
         self.num_files = len(self.gui.display.data.data_files) * num_operations
         self.progress = 0
         self.frame = 1
         self.count = 0
-        self.start()
 
     def run(self):
         try:
+            # Get progress to add for each number of file
             add = 100 / self.num_files
         except ZeroDivisionError:
             print("ZeroDivisionError")
             sys.exit()
         print("ADD", add)
+        # While not timed out
         while self.count < TIME_LIMIT:
+            # Add count
             self.count += 1
+            # If the frame number is different to processed frame number
             if self.frame != self.gui.display.frame_number:
                 print(self.frame, self.gui.display.frame_number, self.progress)
+                # Increase the progress bar and set to new frame
                 self.frame = self.gui.display.frame_number
                 self.progress += add
-                self.gui.onCountChanged(self.progress)
+                # self.gui.onCountChanged(self.progress)
+                self.mySignal.emit(self.progress)
 
 
+# TODO fix coronal plane bugs
 class External2(QThread):
     """
     Runs a counter thread.
     """
+    mySignal2 = pyqtSignal(int)
 
-    def __init__(self, gui):
-        super(External2, self).__init__()
+    def __init__(self, gui, parent=None):
+        # super(External2, self).__init__()
+        QThread.__init__(self, parent)
         self.gui = gui
         if self.gui.num_operations == 0:
             num_operations = 1
@@ -1463,7 +1448,6 @@ class External2(QThread):
         self.progress = 0
         self.frame = 1
         self.count = 0
-        self.start()
 
     def run(self):
         try:
@@ -1478,7 +1462,88 @@ class External2(QThread):
                 print(self.frame, self.gui.display.frame_number, self.progress)
                 self.frame = self.gui.display.frame_number
                 self.progress += add
-                self.gui.onCountChanged2(self.progress)
+                # self.gui.onCountChanged2(self.progress)
+                print(self.progress)
+                self.mySignal2.emit(int(self.progress))
+
+
+class Worker(QThread):
+    start_signal = pyqtSignal(int)
+
+    def __init__(self, gui, parent=None):
+        # super(External2, self).__init__()
+        QThread.__init__(self, parent)
+        self.gui = gui
+
+    def run(self):
+        files = glob.glob("{}\\*.png".format("output_images"))
+        for f in files:
+            os.remove(f)
+        start = 0
+        if self.gui.distance_checkbox == Qt.Checked:
+            start = 1
+            self.gui.display.distance_overlay()
+
+        if self.gui.angle_checkbox == Qt.Checked:
+            start = 1
+            self.gui.display.angle_overlay()
+
+        if self.gui.leg_angle_body_checkbox == Qt.Checked:
+            start = 1
+            self.gui.display.leg_body_angle_overlay()
+
+        if self.gui.left_knee_angle_checkbox == Qt.Checked:
+            start = 1
+            self.gui.display.left_knee_angle_overlay()
+
+        if self.gui.right_knee_angle_checkbox == Qt.Checked:
+            start = 1
+            self.gui.display.right_knee_angle_overlay()
+
+        if self.gui.trajectory_checkbox == Qt.Checked:
+            start = 1
+            self.gui.display.plot_points("RBigToe")
+
+        if start == 0:
+            # If no options selected send a signal
+            self.start_signal.emit()
+
+        else:
+            self.gui.display.display_step_number_overlay()
+            for frame in self.gui.display.frame_list:
+                save_frame(frame)
+            save_video()
+            # self.process_complete_messagebox()
+
+class Worker2(QThread):
+    start_signal2 = pyqtSignal(int)
+
+    def __init__(self, gui, parent=None):
+        # super(External2, self).__init__()
+        QThread.__init__(self, parent)
+        self.gui = gui
+
+    def run(self):
+        # Remove any current images in output file
+        files = glob.glob("{}\\*.png".format("output_coronal_images"))
+        for f in files:
+            os.remove(f)
+        start = 0
+
+        if self.gui.coronal_checkbox == Qt.Checked:
+            start = 1
+            self.gui.display.display_step_width()
+
+        if self.gui.foot_angle_checkbox == Qt.Checked:
+            start = 1
+            self.gui.display.foot_angle_overlay()
+
+        if start == 0:
+            self.start_signal2.emit()
+        else:
+            for frame in self.gui.display.coronal_frame_list:
+                save_frame2(frame)
+            save_video2()
 
 
 def save_frame(frame):
@@ -1624,6 +1689,7 @@ def main(argv=None):
     # distance_overlay(display, "RBigToe", "LBigToe")
     # display.distance_overlay()
     app = QApplication([])
+    app.aboutToQuit.connect(app.deleteLater)
     gui = GUI(display)
     app.exec_()
 
