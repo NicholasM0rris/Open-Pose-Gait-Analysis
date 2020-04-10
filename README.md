@@ -26,7 +26,7 @@ This command is telling the program to use the directory
 op_images/ for the input images, output1/ for JSON data, and the other two arguments 
 for the coronal plane data.
 
-####Note: Default directories
+#### Note: Default directories
 The input images ***MUST*** be in the correct folders, or at this current time 
 in development unpredicatable errors may occur. It should tell you if 
 the directories are not named correctly, however there is no guarantee what may happen!
