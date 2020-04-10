@@ -15,8 +15,11 @@ import time
 import matplotlib.pyplot as plt
 
 ap = argparse.ArgumentParser()
-ap.add_argument('-i', '--image', required=False, help='Add image')
+ap.add_argument('-i', '--images', required=False, help='Add image directory')
 ap.add_argument('-v', '--video', required=False, help='Add Video')
+ap.add_argument('-d', '--data', required=False, help='Add data directory')
+ap.add_argument('-cd', '--cdata', required=False, help='Add coronal data directory')
+ap.add_argument('-ci', '--cimages', required=False, help='Add coronal image directory')
 ap.add_argument('-height', '--height', required=False, type=int, help='Add height of the person in centimetres (cm)')
 args = vars(ap.parse_args())
 
@@ -53,15 +56,28 @@ class ExtractData:
 
     def __init__(self):
         self.cheese = 1
-        self.path_to_input = "input_images"
-        self.path_to_coronal_input = "coronal_input_images"
+        if args['images']:
+            self.path_to_input = args['images']
+        else:
+            self.path_to_input = "input_images"
+        if args['cimages']:
+            self.path_to_coronal_input = args['cimages']
+        else:
+            self.path_to_coronal_input = "coronal_input_images"
+
         self.video_dimensions = ""
         self.data_files = []
         self.input_files = []
         self.coronal_input_files = []
         self.coronal_data_files = []
-        self.path = "output"
-        self.coronal_path = "coronal_input_data"
+        if args['data']:
+            self.path = args['data']
+        else:
+            self.path = "output"
+        if args['cdata']:
+            self.coronal_path = args['cdata']
+        else:
+            self.coronal_path = "coronal_input_data"
         self.key_points = defaultdict(list)
         self.coronal_key_points = defaultdict(list)
 
@@ -299,7 +315,7 @@ class DisplayData:
             f.write("%s\n" % something)
         f.close()
         self.frame_number = 1
-
+    # What does fp actually stand for? I forgot a long time ago... All I remember was spending a long time thinking about the name
     def fp(self, keypoint, frame_index):
         """
         e.g fp("RBigToe, 1) will get x,y coord of RBigToe from frame 1
@@ -547,9 +563,9 @@ class DisplayData:
             for idx, path in enumerate(self.data.input_files):
                 frame = cv2.imread(path)
                 frame = self.add_points_to_image(frame,
-                                                 [self.fp("RKnee", idx), self.fp("Neck", idx), self.fp("MidHip", idx)])
+                                                 [self.fp("LKnee", idx), self.fp("Neck", idx), self.fp("MidHip", idx)])
                 frame = self.add_line_between_points(frame,
-                                                     [self.fp("RKnee", idx), self.fp("MidHip", idx)], 16)
+                                                     [self.fp("LKnee", idx), self.fp("MidHip", idx)], 16)
                 frame = self.add_line_between_points(frame,
                                                      [self.fp("Neck", idx), self.fp("MidHip", idx)], 16)
                 org = tuple([int(self.fp("MidHip", idx)[0]), int(self.fp("MidHip", idx)[1])])
@@ -557,7 +573,7 @@ class DisplayData:
                 fontscale = 1
                 color = (0, 0, 255)
                 thickness = 2
-                angle = self.get_angle(self.fp("Neck", idx), self.fp("RKnee", idx), self.fp("MidHip", idx))
+                angle = self.get_angle(self.fp("Neck", idx), self.fp("LKnee", idx), self.fp("MidHip", idx))
                 self.leg_body_angles.append("Frame {} - Angle: {}".format(self.frame_number, angle))
                 self.num_leg_body_angles.append(angle)
                 frame = cv2.putText(frame, 'Angle: {}'.format(angle), org, font,
@@ -569,9 +585,9 @@ class DisplayData:
             temp_list = []
             for idx, frame in enumerate(self.frame_list):
                 frame = self.add_points_to_image(frame,
-                                                 [self.fp("RKnee", idx), self.fp("Neck", idx), self.fp("MidHip", idx)])
+                                                 [self.fp("LKnee", idx), self.fp("Neck", idx), self.fp("MidHip", idx)])
                 frame = self.add_line_between_points(frame,
-                                                     [self.fp("RKnee", idx), self.fp("MidHip", idx)], 16)
+                                                     [self.fp("LKnee", idx), self.fp("MidHip", idx)], 16)
                 frame = self.add_line_between_points(frame,
                                                      [self.fp("Neck", idx), self.fp("MidHip", idx)], 16)
                 org = tuple([int(self.fp("MidHip", idx)[0]), int(self.fp("MidHip", idx)[1])])
@@ -579,7 +595,7 @@ class DisplayData:
                 fontscale = 1
                 color = (0, 0, 255)
                 thickness = 2
-                angle = self.get_angle(self.fp("Neck", idx), self.fp("RKnee", idx), self.fp("MidHip", idx))
+                angle = self.get_angle(self.fp("Neck", idx), self.fp("LKnee", idx), self.fp("MidHip", idx))
                 self.leg_body_angles.append("Frame {} - Angle: {}".format(self.frame_number, angle))
                 self.num_leg_body_angles.append(angle)
                 frame = cv2.putText(frame, 'Angle: {}'.format(angle), org, font,
@@ -1651,7 +1667,7 @@ def save_video():
         print("Index error: No images in output folder")
         sys.exit("Index error: No images in output folder")
     height, width, layers = frame.shape
-    video = cv2.VideoWriter("{}/Output.avi".format("processed_video"), 0, 1, (width, height))
+    video = cv2.VideoWriter("Output.avi", 0, 1, (width, height))
     for image in images:
         video.write(cv2.imread(image))
     cv2.destroyAllWindows()
@@ -1672,7 +1688,8 @@ def save_video2():
         print("Index error2: No images in output folder")
         sys.exit("Index error: No images in output folder")
     height, width, layers = frame.shape
-    video = cv2.VideoWriter("{}/Coronal_Output.avi".format("processed_video"), 0, 1, (width, height))
+    # video = cv2.VideoWriter("{}/Coronal_Output.avi".format("processed_video"), 0, 1, (width, height))
+    video = cv2.VideoWriter("Coronal_Output.avi", 0, 1, (width, height))
     for image in images:
         video.write(cv2.imread(image))
     cv2.destroyAllWindows()
