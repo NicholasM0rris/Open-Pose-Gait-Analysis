@@ -50,6 +50,10 @@ Additionally the input directories should be created in the
 correct loccations and named correctly.
 The program should then be ready to run after the installations.
 
+#### Directories to create and populate:
+`input_images` (open pose images) and  `output` (JSON input data) for sagittal plane, and named a little better are 
+`coronal_images` and `coronal_input_data`
+
 ### How to use the program
 
 After running the command to start the program, the user interface should appear.
