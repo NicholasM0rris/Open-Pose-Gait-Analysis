@@ -1,3 +1,8 @@
+### Data:
+Example data processed with Open Pose can be found here:
+
+https://1drv.ms/u/s!Am7KReNR0aJnmVMnFB9eom9GWGjt?e=shrSjG
+
 <h3> Usage </h3>
  All the code has been compiled into a single file with everything required
   to run it in <code>extract_data.py</code> (excluding the input data).
@@ -33,7 +38,7 @@ the directories are not named correctly, however there is no guarantee what may 
 The default directories for the
 data are:
 
-`input_images` and  `output` (JSON input data) for sagittal plane, and named a little better are 
+`input_images` and  `input_data` (JSON input data) for sagittal plane, and named a little better are 
 `coronal_images` and `coronal_input_data`
 
 
@@ -51,7 +56,7 @@ correct loccations and named correctly.
 The program should then be ready to run after the installations.
 
 #### Directories to create and populate:
-`input_images` (open pose images) and  `output` (JSON input data) for sagittal plane, and named a little better are 
+`input_images` (open pose images) and  `input_data` (JSON input data) for sagittal plane, and named a little better are 
 `coronal_images` and `coronal_input_data`
 
 ### How to use the program

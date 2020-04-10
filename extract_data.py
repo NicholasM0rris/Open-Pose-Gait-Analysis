@@ -73,7 +73,7 @@ class ExtractData:
         if args['data']:
             self.path = args['data']
         else:
-            self.path = "output"
+            self.path = "input_images"
         if args['cdata']:
             self.coronal_path = args['cdata']
         else:
