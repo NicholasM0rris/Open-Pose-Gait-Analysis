@@ -14,6 +14,9 @@ from PyQt5.QtGui import *
 import time
 import matplotlib.pyplot as plt
 
+"""
+Create argparse arguments
+"""
 ap = argparse.ArgumentParser()
 ap.add_argument('-i', '--images', required=False, help='Add image directory')
 ap.add_argument('-v', '--video', required=False, help='Add Video')
@@ -23,6 +26,7 @@ ap.add_argument('-ci', '--cimages', required=False, help='Add coronal image dire
 ap.add_argument('-height', '--height', required=False, type=int, help='Add height of the person in centimetres (cm)')
 args = vars(ap.parse_args())
 
+# Define key point dictionary
 key_points = {
     "Nose": 0,
     "Neck": 1,
@@ -53,6 +57,9 @@ key_points = {
 
 
 class ExtractData:
+    """
+    Create a class for extracting data from JSON and image files
+    """
 
     def __init__(self):
         self.cheese = 1
@@ -73,7 +80,7 @@ class ExtractData:
         if args['data']:
             self.path = args['data']
         else:
-            self.path = "input_images"
+            self.path = "input_data"
         if args['cdata']:
             self.coronal_path = args['cdata']
         else:
@@ -86,6 +93,9 @@ class ExtractData:
         self.extract_frames()
         self.interpolate_all_keypoints()
         self.interpolate_all_coronal_keypoints()
+
+        # print(len(self.input_files), len(self.data_files))
+        # sys.exit()
 
     def print_keypoints(self, key_point=None):
         """
@@ -108,20 +118,40 @@ class ExtractData:
             self.coronal_data_files.append(filename)
 
     def print_data_files(self):
+        """
+        Print current list of data files
+        """
         print(self.data_files)
 
     def print_number_data_files(self, df):
+        """
+        Print number of data files
+        :param df:
+        :return:
+        """
         self.cheese = 1
         print(len(df['people'][0]['pose_keypoints_2d']))
 
     def get_data_frames(self):
-        for files in self.data_files:
-            temp = []
-            temp_df = json.load(open(files))
-            for key in key_points.keys():
-                self.key_points[key].append(
-                    temp_df['people'][0]['pose_keypoints_2d'][key_points[key] * 3:key_points[key] * 3 + 3])
+        """
+        Extract the list of joint keypoint locations from JSON files stored in the list of paths in data_files
+        :return:
+        """
         try:
+            # Get sagittal plane
+            for files in self.data_files:
+                temp = []
+                temp_df = json.load(open(files))
+                for key in key_points.keys():
+                    self.key_points[key].append(
+                        temp_df['people'][0]['pose_keypoints_2d'][key_points[key] * 3:key_points[key] * 3 + 3])
+
+        # Except index error due to empty directory
+        except IndexError:
+            print("Error ! sagittal input folders may be empty !")
+            sys.exit(1)
+        try:
+            # Get coronal plane
             for files in self.coronal_data_files:
                 temp = []
                 temp_df = json.load(open(files))
@@ -134,6 +164,11 @@ class ExtractData:
             sys.exit(1)
 
     def extract_video_frame(self, sec=0):
+        """
+        Extract a video frame
+        :param sec: Specify time to extract frame
+        :return:
+        """
         if args['video']:
             vidcap = cv2.VideoCapture(args['video'])
 
@@ -148,6 +183,10 @@ class ExtractData:
         return frame
 
     def extract_frames(self):
+        """
+        Extract the open pose image files for sagittal and coronal planes
+        :return:
+        """
         for filename in glob.glob("{}\\*.png".format(self.path_to_input)):
             self.input_files.append(filename)
         for filename in glob.glob("{}\\*.png".format(self.path_to_coronal_input)):
@@ -238,6 +277,9 @@ class ExtractData:
 
 
 class DisplayData:
+    """
+    The class calculates and displays the processed data and measurements
+    """
 
     def __init__(self, data):
         self.right_foot_count = 0
@@ -279,6 +321,11 @@ class DisplayData:
         self.get_number_steps()
 
     def plot_points(self, keypoint):
+        """
+        Plot the points of a keypoint for each frame
+        :param keypoint: Keypoint to plot e.g "RHeel"
+        :return:
+        """
         frame = cv2.imread(self.data.input_files[0])
         height, width, layers = frame.shape
         x = []
@@ -304,7 +351,7 @@ class DisplayData:
 
     def save_text(self, alist, text_type):
         """
-        Saves a test file containing the log
+        Saves a test file containing the data log
         :return:
         """
 
@@ -315,7 +362,9 @@ class DisplayData:
             f.write("%s\n" % something)
         f.close()
         self.frame_number = 1
-    # What does fp actually stand for? I forgot a long time ago... All I remember was spending a long time thinking about the name
+
+    # What does fp actually stand for? I forgot a long time ago...
+    # fp stands for fast point to quickly retreive a keypoint coordinate
     def fp(self, keypoint, frame_index):
         """
         e.g fp("RBigToe, 1) will get x,y coord of RBigToe from frame 1
@@ -364,7 +413,7 @@ class DisplayData:
 
     def distance_overlay(self):
         """
-        Creates overlay for distance
+        Creates overlay for distance over the image frames
         :return:
         """
         # Add overlay
@@ -426,11 +475,11 @@ class DisplayData:
         a = (p1.x - p2.x, p1.y - p2.y)
         b = (p1.x - p3.x, p1.y - p3.y)
         a dot b = mag(a)mag(b)cos(theta)
-        Returns the angle from three points
+        Returns the angle from three points by finding the cross product
         :param p1: point 1 (x,y)
         :param p2: point 2 (x,y)
         :param p3: common point to pt 1 & 2 (x,y)
-        :return: angle in degrees?
+        :return: angle in degrees
         """
         a = (p1[0] - p2[0], p1[1] - p2[1])
         b = (p1[0] - p3[0], p1[1] - p3[1])
@@ -494,6 +543,7 @@ class DisplayData:
     def angle_overlay(self):
         """
         Creates overlay for angle between legs from the hips
+        (Such that there are two vectors from left knee to hips and right knee to hips
         :return:
         """
         # Add overlay
@@ -520,6 +570,7 @@ class DisplayData:
                 # save_frame(frame)
                 self.frame_list.append(frame)
         else:
+            """ If frame list is not empty, use the existing frames """
             temp_list = []
             for idx, frame in enumerate(self.frame_list):
                 frame = self.add_points_to_image(frame,
@@ -543,6 +594,7 @@ class DisplayData:
 
             self.frame_list = temp_list
 
+        """ Save the calculated angles to a text file """
         if self.gui.angle_checkbox == Qt.Checked:
             print("Saving angles to text file")
             self.save_text(self.angles, "Angle")
@@ -555,7 +607,7 @@ class DisplayData:
 
     def leg_body_angle_overlay(self):
         """
-        Creates overlay for angle between legs from the hips
+        Creates overlay for angle between legs and torso from the hips
         :return:
         """
         # Add overlay
@@ -581,7 +633,9 @@ class DisplayData:
                 self.frame_number += 1
                 # save_frame(frame)
                 self.frame_list.append(frame)
+
         else:
+            """ If frame list is not empty, use the existing frames """
             temp_list = []
             for idx, frame in enumerate(self.frame_list):
                 frame = self.add_points_to_image(frame,
@@ -611,7 +665,7 @@ class DisplayData:
 
     def right_knee_angle_overlay(self):
         """
-        Creates overlay for angle between legs from the hips
+        Creates overlay for angle at the right knee
         :return:
         """
         # Add overlay
@@ -638,6 +692,7 @@ class DisplayData:
                 # save_frame(frame)
                 self.frame_list.append(frame)
         else:
+            """ If frame list is not empty, use the existing frames """
             temp_list = []
             for idx, frame in enumerate(self.frame_list):
                 frame = self.add_points_to_image(frame,
@@ -667,7 +722,7 @@ class DisplayData:
 
     def left_knee_angle_overlay(self):
         """
-        Creates overlay for angle between legs from the hips
+        Creates overlay for angle at the left knee
         :return:
         """
         # Add overlay
@@ -694,6 +749,7 @@ class DisplayData:
                 # save_frame(frame)
                 self.frame_list.append(frame)
         else:
+            """ If frame list is not empty, use the existing frames """
             temp_list = []
             for idx, frame in enumerate(self.frame_list):
                 frame = self.add_points_to_image(frame,
@@ -707,6 +763,7 @@ class DisplayData:
                 fontscale = 1
                 color = (0, 0, 255)
                 thickness = 2
+                """ Calculate the angle and save it """
                 angle = self.get_angle(self.fp("LHeel", idx), self.fp("LHip", idx), self.fp("LKnee", idx))
                 self.left_knee_angles.append("Frame {} - Angle: {}".format(self.frame_number, angle))
                 self.num_left_knee_angles.append(angle)
@@ -730,6 +787,10 @@ class DisplayData:
         return abs(self.fp2("RHeel", index)[0] - self.fp2("LHeel", index)[0])
 
     def display_step_width(self):
+        """
+        Display the step width in the coronal plane, calculated as the distance between left and right heel
+        :return:
+        """
         # Add overlay
         # print("frame list : ", self.data.coronal_input_files)
         # print("frame files : ", self.data.coronal_data_files)
@@ -756,6 +817,7 @@ class DisplayData:
                 # save_frame(frame)
         # If there has already been frames processed (frame_list not empty)
         else:
+            """ If frame list is not empty, use the existing frames """
             temp_list = []
             for idx, frame in enumerate(self.coronal_frame_list):
                 frame = self.add_points_to_image(frame, [self.fp2("RHeel", idx), self.fp2("LHeel", idx)])
@@ -794,7 +856,8 @@ class DisplayData:
 
     def foot_angle_overlay(self):
         """
-        Creates overlay for angle between foot
+        Creates overlay for angle between foot. Calculated as angle between two vectors made from toe and heel, and
+        Midhip to neck
         :return:
         """
         # Add overlay
@@ -826,6 +889,7 @@ class DisplayData:
                 # save_frame(frame)
                 self.coronal_frame_list.append(frame)
         else:
+            """ If frame list is not empty, use the existing frames """
             temp_list = []
             for idx, frame in enumerate(self.coronal_frame_list):
                 frame = self.add_points_to_image(frame,
@@ -867,6 +931,7 @@ class DisplayData:
 
     def get_number_steps(self):
         """
+        Calculate the number of steps from the sagittal plane
         Direction 1: left
         direction 2: right
         :return:
@@ -942,7 +1007,7 @@ class DisplayData:
     def display_step_number_overlay(self):
 
         """
-        Creates overlay for step number
+        Creates overlay for step number over all frames
         :return:
         """
         org = (100, 100)
@@ -989,6 +1054,10 @@ class DisplayData:
 
 
 class GUI(QMainWindow):
+    """
+    Creates the main GUI window for the user
+    """
+
     def __init__(self, display):
         super(GUI, self).__init__()
         self.num_operations = 0
@@ -1012,6 +1081,7 @@ class GUI(QMainWindow):
 
         # self.window = QWidget(parent=self)
         # self.layout = QBoxLayout(QBoxLayout.LeftToRight, self.window)
+        """ Create the widgets """
         self.create_tabs()
 
         self.gif()
@@ -1048,6 +1118,10 @@ class GUI(QMainWindow):
         self.show()
 
     def create_tabs(self):
+        """
+        Creates two tabs for sagittal and coronal options
+        :return:
+        """
 
         self.tab1 = QWidget()
         self.tab2 = QWidget()
@@ -1056,6 +1130,10 @@ class GUI(QMainWindow):
         self.tab.addTab(self.tab2, "Coronal")
 
     def gif(self):
+        """
+        Display the walking gif (skeleton currently)
+        :return:
+        """
 
         self.movie_label = QLabel()
 
@@ -1066,6 +1144,10 @@ class GUI(QMainWindow):
         self.grid.addWidget(self.movie_label, 0, 3)
 
     def gif2(self):
+        """
+        Display the walking gif for coronal plane (skeleton currently)
+        :return:
+        """
 
         self.movie_label2 = QLabel()
 
@@ -1076,6 +1158,10 @@ class GUI(QMainWindow):
         self.grid2.addWidget(self.movie_label2, 0, 3)
 
     def start_Button(self):
+        """
+        Create a start button and connect it to start functions
+        :return:
+        """
 
         self.start_button = QPushButton('Start', self)
         self.start_button.clicked.connect(self.startbuttonclick)
@@ -1085,7 +1171,10 @@ class GUI(QMainWindow):
         # self.layout.addWidget(self.start_button)
 
     def start_Button2(self):
-
+        """
+        Create a start button for coronal plane tab and connect it to start functions
+        :return:
+        """
         self.start_button2 = QPushButton('Start', self)
         self.start_button2.clicked.connect(self.startbuttonclick2)
         self.start_button2.clicked.connect(self.start_button_functions2)
@@ -1093,13 +1182,22 @@ class GUI(QMainWindow):
 
     @pyqtSlot()
     def start_button_functions2(self):
+        """
+        Assign worker threads for processing functions in coronal plane
+        :return:
+        """
         self.worker_thread2 = Worker2(self)
         self.worker_thread2.finished.connect(self.process_complete_messagebox2)
         self.worker_thread2.start()
+        ''' Assign worker signal to function '''
         self.worker_thread2.start_signal2.connect(self.no_option_messagebox)
 
     @pyqtSlot()
     def start_button_functions(self):
+        """
+        Assign worker threads for processing functions in the sagittal plane
+        :return:
+        """
         # Remove any current images in output file
         self.worker_thread = Worker(self)
         self.worker_thread.finished.connect(self.process_complete_messagebox)
@@ -1108,6 +1206,10 @@ class GUI(QMainWindow):
 
     @pyqtSlot()
     def no_option_messagebox(self):
+        """
+        If no options are selected prompt user with a message box
+        :return:
+        """
         print("No option selected ! ")
         msg = QMessageBox()
         msg.setWindowTitle("Whoops ! ")
@@ -1117,6 +1219,10 @@ class GUI(QMainWindow):
 
     @pyqtSlot()
     def process_complete_messagebox(self):
+        """
+        Once processing is complete notify the user
+        :return:
+        """
         print("Process complete ! ")
         msg = QMessageBox.question(self, "The operations have successfully finished ! ",
                                    "Do you want to preview the output video?",
@@ -1131,6 +1237,10 @@ class GUI(QMainWindow):
 
     @pyqtSlot()
     def process_complete_messagebox2(self):
+        """
+        Notify the user with a messagebox once processing in the coronal plane is complete
+        :return:
+        """
         print("Process complete ! ")
         msg = QMessageBox.question(self, "The operations have successfully finished ! ",
                                    "Do you want to preview the output video?",
@@ -1146,6 +1256,10 @@ class GUI(QMainWindow):
     pyqtSlot()
 
     def startbuttonclick2(self):
+        """
+        Coronal plane assign progress bar thread
+        :return:
+        """
         if self.coronal_checkbox == Qt.Checked:
             self.num_operations += 1
         if self.foot_angle_checkbox == Qt.Checked:
@@ -1155,13 +1269,16 @@ class GUI(QMainWindow):
             self.calc.mySignal2.connect(self.onCountChanged2)
             self.calc.start()
 
-
         else:
             print("set counter to 0")
             self.calc.progress = 0
             self.calc.count = 0
 
     def startbuttonclick(self):
+        """
+        sagittal plane assign progress bar thread
+        :return:
+        """
         if self.angle_checkbox == Qt.Checked:
             self.num_operations += 1
         if self.distance_checkbox == Qt.Checked:
@@ -1182,6 +1299,10 @@ class GUI(QMainWindow):
             self.calc.count = 0
 
     def dropdown(self):
+        """
+        Create a drop down to choose which points to calculate distance
+        :return:
+        """
         self.first_label = QLabel("First point", self)
         self.second_label = QLabel("Second point", self)
         self.second_label.setAlignment(Qt.AlignBottom)
@@ -1236,7 +1357,14 @@ class GUI(QMainWindow):
         print(self.display.keypoint2)
 
     def print_option_checkbox(self):
+        """
+        Check boxes for selecting which measurements to use
+        :return:
+        """
         self.checkbox_layout = QVBoxLayout()
+        label = QLabel("Select your measurements:", self)
+        self.checkbox_layout.addWidget(label)
+
         box = QCheckBox("Distance", self)
         box.stateChanged.connect(self.distance_clickbox)
         self.checkbox_layout.addWidget(box)
@@ -1405,7 +1533,7 @@ TIME_LIMIT = 2400000000000000000000000000
 
 class External(QThread):
     """
-    Runs a counter thread.
+    run the progress bar in an external thread class
     """
     mySignal = pyqtSignal(int)
 
@@ -1448,7 +1576,7 @@ class External(QThread):
 # TODO fix coronal plane bugs
 class External2(QThread):
     """
-    Runs a counter thread.
+    Runs progress bar for coronal plane in external thread
     """
     mySignal2 = pyqtSignal(int)
 
@@ -1484,6 +1612,9 @@ class External2(QThread):
 
 
 class Worker(QThread):
+    """
+    Worker thread for processing measurements in the sagittal plane
+    """
     start_signal = pyqtSignal(int)
 
     def __init__(self, gui, parent=None):
@@ -1531,7 +1662,11 @@ class Worker(QThread):
             save_video()
             # self.process_complete_messagebox()
 
+
 class Worker2(QThread):
+    """
+    Worker thread for processing measurements in the coronal plane
+    """
     start_signal2 = pyqtSignal(int)
 
     def __init__(self, gui, parent=None):
