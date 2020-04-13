@@ -24,6 +24,7 @@ ap.add_argument('-d', '--data', required=False, help='Add data directory')
 ap.add_argument('-cd', '--cdata', required=False, help='Add coronal data directory')
 ap.add_argument('-ci', '--cimages', required=False, help='Add coronal image directory')
 ap.add_argument('-height', '--height', required=False, type=int, help='Add height of the person in centimetres (cm)')
+ap.add_argument('-fps', '--fps', required=False, type=int, help='FPS to save video output')
 args = vars(ap.parse_args())
 
 # Define key point dictionary
@@ -94,13 +95,21 @@ class ExtractData:
         self.interpolate_all_keypoints()
         self.interpolate_all_coronal_keypoints()
 
+        if len(self.input_files) != len(self.data_files):
+            print("The number of input files and data files differ! Closing program. Check they are the same"
+                  "and try again!")
+            sys.exit(1)
+        if len(self.coronal_input_files) != len(self.coronal_data_files):
+            print("The number of coronal input files and data files differ! Closing program. Check they are the same"
+                  "and try again!")
+            sys.exit(1)
         # print(len(self.input_files), len(self.data_files))
         # sys.exit()
 
     def print_keypoints(self, key_point=None):
         """
         Prints keypoint list
-        :param key_point: Show specific keypoint
+        :param key_point: Show specific key point
         """
         if key_point:
             print(self.key_points[key_point])
@@ -945,6 +954,9 @@ class DisplayData:
         elif x1_r < x2_r:
             right_direction = 2
 
+        y1_r = self.fp("RHeel", 0)[1]
+        y2_r = self.fp("RHeel", 1)[1]
+
         x1_left = self.fp("LHeel", 0)[0]
         x2_left = self.fp("LHeel", 1)[0]
         if x1_left > x2_left:
@@ -953,6 +965,10 @@ class DisplayData:
             left_direction = 2
         print("init left direction", left_direction, x1_left, x2_left)
 
+        y1_left = self.fp("LHeel", 0)[1]
+        y2_left = self.fp("LHeel", 1)[1]
+
+
         for idx, path in enumerate(self.data.input_files):
             try:
                 x1_r = self.fp("RHeel", idx)[0]
@@ -960,8 +976,25 @@ class DisplayData:
                 if x1_r > x2_r:
                     if right_direction == 2:
                         # If moving right, and now moving left
-                        self.right_foot_count += 1
-                        self.right_foot_index.append(idx)
+                        y1_r = self.fp("RHeel", idx)[1]
+                        y2_r = self.fp("RHeel", idx + 1)[1]
+                        initial_rate = abs(y1_r - y2_r)
+                        try:
+                            for i in range(5):
+                                y1_r = self.fp("RHeel", idx + i)[1]
+                                y2_r = self.fp("RHeel", idx + 1 + i)[1]
+                                rate = abs(y1_r - y2_r)
+                                i += 1
+                                if rate < initial_rate/2:
+                                    self.right_foot_count += 1
+                                    self.right_foot_index.append(idx+i)
+                                    break
+
+                        except IndexError:
+                            pass
+
+                        # self.right_foot_count += 1
+                        # self.right_foot_index.append(idx)
                     # Set direction to left
                     right_direction = 1
 
@@ -985,8 +1018,22 @@ class DisplayData:
                 if x1_left > x2_left:
                     if left_direction == 2:
                         # If moving right, and now moving left
-                        self.left_foot_count += 1
-                        self.left_foot_index.append(idx)
+                        y1_left = self.fp("LHeel", idx)[1]
+                        y2_left = self.fp("LHeel", idx + 1)[1]
+                        initial_rate = abs(y1_left - y2_left)
+                        try:
+                            for i in range(5):
+                                y1_left = self.fp("LHeel", idx + i)[1]
+                                y2_left = self.fp("LHeel", idx + 1 + i)[1]
+                                rate = abs(y1_left - y2_left)
+                                i += 1
+                                if rate < initial_rate / 2:
+                                    self.left_foot_count += 1
+                                    self.left_foot_index.append(idx + i)
+                                    break
+                        except IndexError:
+                            pass
+
                     # Set direction to left
                     left_direction = 1
 
@@ -1073,7 +1120,7 @@ class GUI(QMainWindow):
         self.palette.setColor(QPalette.ButtonText, Qt.white)
         self.setPalette(self.palette)
         self.setGeometry(50, 50, 500, 500)
-        self.setWindowTitle("Super cool Alpha ver.")
+        self.setWindowTitle("Early development user interface V6.0.9.13")
         self.display = display
         self.display.gui = self
         # self.app = QApplication([])
@@ -1802,7 +1849,11 @@ def save_video():
         print("Index error: No images in output folder")
         sys.exit("Index error: No images in output folder")
     height, width, layers = frame.shape
-    video = cv2.VideoWriter("Output.avi", 0, 1, (width, height))
+    if args['fps']:
+        video = cv2.VideoWriter("Output.avi", 0, args['fps'], (width, height))
+    else:
+        video = cv2.VideoWriter("Output.avi", 0, 1, (width, height))
+
     for image in images:
         video.write(cv2.imread(image))
     cv2.destroyAllWindows()
@@ -1824,7 +1875,11 @@ def save_video2():
         sys.exit("Index error: No images in output folder")
     height, width, layers = frame.shape
     # video = cv2.VideoWriter("{}/Coronal_Output.avi".format("processed_video"), 0, 1, (width, height))
-    video = cv2.VideoWriter("Coronal_Output.avi", 0, 1, (width, height))
+    if args['fps']:
+        video = cv2.VideoWriter("Coronal_Output.avi", 0, args['fps'], (width, height))
+    else:
+        video = cv2.VideoWriter("Coronal_Output.avi", 0, 1, (width, height))
+
     for image in images:
         video.write(cv2.imread(image))
     cv2.destroyAllWindows()
