@@ -3,6 +3,8 @@ Example data processed with Open Pose can be found here:
 
 https://1drv.ms/u/s!Am7KReNR0aJnmVMnFB9eom9GWGjt?e=shrSjG
 
+You can copy and move these folders into the same directory as the `extract_data.py` file.
+
 <h3> Usage </h3>
  All the code has been compiled into a single file with everything required
   to run it in <code>extract_data.py</code> (excluding the input data).
@@ -22,6 +24,8 @@ https://1drv.ms/u/s!Am7KReNR0aJnmVMnFB9eom9GWGjt?e=shrSjG
   ```-ci ``` specificies coronal plane images
  <br>
  `-cd` specifies coronal plane JSON data
+ <br>
+ `-fps` specifies output video fps (1 fps default)
  
  An example:
  <br>
