@@ -25,6 +25,8 @@ You can copy and move these folders into the same directory as the `extract_data
  <br>
  `-cd` specifies coronal plane JSON data
  <br>
+ Additionally:
+ <br>
  `-fps` specifies output video fps (1 fps default)
  
  An example:
