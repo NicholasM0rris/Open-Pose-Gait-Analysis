@@ -25,11 +25,11 @@ https://1drv.ms/u/s!Am7KReNR0aJnmVMnFB9eom9GWGjt?e=shrSjG
  
  An example:
  <br>
- ```py -3.7-64 extract_data.py -i op_images -d output1 -ci c_images -cd c_output```
+ ```py -3.7-64 extract_data.py -i op_images -d output1 -ci c_images -cd c_output --fps 20```
  
 This command is telling the program to use the directory
 op_images/ for the input images, output1/ for JSON data, and the other two arguments 
-for the coronal plane data.
+for the coronal plane data. This will also tell the program to set the output video to 20 fps.
 
 #### Note: Default directories
 The input images ***MUST*** be in the correct folders, or at this current time 
