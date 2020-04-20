@@ -328,6 +328,7 @@ class DisplayData:
         self.frame_number = 1
         # Get number of steps
         self.get_number_steps()
+        self.correct_leg_swap()
 
     def plot_points(self, keypoint):
         """
@@ -937,6 +938,80 @@ class DisplayData:
                 max_angle = an_angle[1]
 
         # self.gui.angle_label.setText("Max Angle: {}".format(max_angle))
+
+    def correct_leg_swap(self):
+        """
+        Search through the datapoints to find cases where left and right leg have swapped
+        Check the acceleration of the knee, and if detected then
+        xHeel, xBigToe, xKnee, xSmallToe and xAnkle should be swapped
+        :return:
+        """
+        right_knee_direction = 0
+        left_knee_direction = 0
+        ''' Define initial x1 and x2 '''
+        RKnee_x1 = self.fp("RKnee", 0)[0]
+        RKnee_x2 = self.fp("RKnee", 1)[0]
+        RKnee_x3 = self.fp("RKnee", 2)[0]
+        if RKnee_x1 > RKnee_x2:
+            right_knee_direction = 1
+        elif RKnee_x1 < RKnee_x2:
+            right_knee_direction = 2
+        ''' Get the rate of change '''
+        change1 = RKnee_x2 - RKnee_x1
+        change2 = RKnee_x3 - RKnee_x2
+        rate_change = [change1 - change2]
+        average_rate_change = 0
+        ''' Iterate over the data files to look for leg swaps '''
+        for idx, path in enumerate(self.data.input_files):
+            try:
+                RKnee_x1 = self.fp("RKnee", idx)[0]
+                RKnee_x2 = self.fp("RKnee", idx + 1)[0]
+                RKnee_x3 = self.fp("RKnee", idx + 2)[0]
+                change1 = RKnee_x2 - RKnee_x1
+                change2 = RKnee_x3 - RKnee_x2
+                rate_change.append(change1 - change2)
+
+            except IndexError:
+                pass
+        abs_sum = 0
+        ''' Sum the absolute values of the rate changes'''
+        for value in rate_change:
+            abs_sum += abs(value)
+        average_rate_change = abs_sum / len(rate_change)
+        ''' Check if there is a rate change twice the average rate change'''
+        detected_frame_list = []
+        for idx, frame in enumerate(self.data.input_files):
+            try:
+                ''' If a high rate change is detected swap the legs'''
+                if rate_change[idx] > average_rate_change * 2:
+                    detected_frame_list.append(idx)
+                    print("Possible leg swap at frame {}".format(idx))
+
+                    ''' Get the points '''
+                    RKnee = self.fp("RKnee", idx)
+                    RAnkle = self.fp("RAnkle", idx)
+                    RBigToe = self.fp("RBigToe", idx)
+                    RSmallToe = self.fp("RSmallToe", idx)
+                    RHeel = self.fp("RHeel", idx)
+
+                    LKnee = self.fp("LKnee", idx)
+                    LAnkle = self.fp("LAnkle", idx)
+                    LBigToe = self.fp("LBigToe", idx)
+                    LSmallToe = self.fp("LSmallToe", idx)
+                    LHeel = self.fp("LHeel", idx)
+
+                    ''' Do the swapping '''
+                    LKnee, RKnee = RKnee, LKnee
+                    LAnkle, RAnkle = RAnkle, LAnkle
+                    LBigToe, RBigToe = RBigToe, LBigToe
+                    LSmallToe, RSmallToe = RSmallToe, LSmallToe
+                    LHeel, RHeel = RHeel, LHeel
+
+            except IndexError:
+                pass
+        self.save_text(detected_frame_list, "Detected_leg_swap_frame_list")
+
+
 
     def get_number_steps(self):
         """
