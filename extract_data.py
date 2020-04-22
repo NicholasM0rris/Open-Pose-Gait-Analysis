@@ -1197,6 +1197,8 @@ class DisplayData:
             |x2 - x1| / time
             time = 1 / FPS
         '''
+        area = 10
+        colors = (0, 0, 0)
         save_to_file_list = []
         step_list = self.right_foot_index + self.left_foot_index
         step_list.sort()
@@ -1221,6 +1223,22 @@ class DisplayData:
         print("std: ", std)
         save_to_file_list.append("Unfiltered average velocity: {}".format(mean))
         save_to_file_list.append("Unfiltered standard deviation: {}".format(std))
+
+        # Plot unfiltered
+
+        plt.figure()
+        plt.plot(step_list, self.velocity_list, linewidth=2, linestyle="-", c="b")
+        plt.title('Unfiltered velocities')
+        axes = plt.gca()
+        ymin = 0
+        ymax = 5000
+        axes.set_ylim([ymin, ymax])
+        plt.xlabel('frame number')
+        plt.ylabel('velocities')
+        # axes.set_yscale('log')
+        # plt.gca().invert_yaxis()
+        plt.savefig("plots/Unfiltered_velocities_scatter3.png")
+
         ''' Filter points for outliers '''
         idx_list = []
         # Get the indexes to remove
@@ -1251,8 +1269,7 @@ class DisplayData:
         save_to_file_list.append("Filtered standard deviation: {}".format(std))
         self.save_text(save_to_file_list, "Velocities")
         # self.velocity_list = filtered_list
-        area = 10
-        colors = (0, 0, 0)
+        plt.figure()
         plt.scatter(step_list, self.velocity_list, c=colors, s=area, alpha=0.5)
         #plt.plot(step_list, self.velocity_list, linewidth=2, linestyle="-", c="b")
         plt.title('Filtered velocities')
@@ -1264,7 +1281,8 @@ class DisplayData:
         plt.ylabel('velocities')
         #axes.set_yscale('log')
         #plt.gca().invert_yaxis()
-        plt.savefig("plots/Filtered_velocities_scatter.png")
+        plt.savefig("plots/Filtered_velocities_scatter3.png")
+
 
 
 
