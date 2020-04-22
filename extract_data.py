@@ -25,6 +25,8 @@ ap.add_argument('-cd', '--cdata', required=False, help='Add coronal data directo
 ap.add_argument('-ci', '--cimages', required=False, help='Add coronal image directory')
 ap.add_argument('-height', '--height', required=False, type=int, help='Add height of the person in centimetres (cm)')
 ap.add_argument('-fps', '--fps', required=False, type=int, help='FPS to save video output')
+ap.add_argument('-vl', '-video_length', required=False, type=float, help='Add the video length in seconds')
+
 args = vars(ap.parse_args())
 
 # Define key point dictionary
@@ -326,9 +328,18 @@ class DisplayData:
         self.frame_list = []
         self.coronal_frame_list = []
         self.frame_number = 1
+        # Get video analytics
+        if args['video']:
+            self.video_path = args['video']
+        else:
+            self.video_path = 'op_video/test2.avi'
+        self.duration, self.frame_count, self.fps = get_video_length(self.video_path)
         # Get number of steps
-        self.get_number_steps()
+        self.velocity_list = []
         self.correct_leg_swap()
+        self.get_number_steps()
+        self.get_velocity()
+
 
     def plot_points(self, keypoint):
         """
@@ -973,6 +984,7 @@ class DisplayData:
 
             except IndexError:
                 pass
+
         abs_sum = 0
         ''' Sum the absolute values of the rate changes'''
         for value in rate_change:
@@ -1173,6 +1185,88 @@ class DisplayData:
                 temp_list.append(frame)
 
             self.frame_list = temp_list
+
+    def get_velocity(self):
+        """
+        Calculate the displacement between each step, and use it to find the velocity
+        :return:
+        """
+
+        ''' Calculate velocity
+            speed = displacement/time
+            |x2 - x1| / time
+            time = 1 / FPS
+        '''
+        save_to_file_list = []
+        step_list = self.right_foot_index + self.left_foot_index
+        step_list.sort()
+        for x, idx in enumerate(step_list):
+            try:
+                displacement = abs(get_distance(self.fp("LBigToe", idx), self.fp("RBigToe", idx)))
+                number_frames_passed = idx - step_list[x-1]
+                t = number_frames_passed * (1 / self.fps)
+                speed = displacement / t
+                if speed == float('+inf') or speed == float('-inf'):
+                    speed = 999
+
+                self.velocity_list.append(speed)
+                save_to_file_list.append("The velocity at frame {}: {}".format(idx, speed))
+
+            except IndexError:
+                pass
+        filtered_list = np.array(self.velocity_list)
+        mean = np.mean(filtered_list)
+        std = np.std(filtered_list)
+        print("Average velocity: ", mean)
+        print("std: ", std)
+        save_to_file_list.append("Unfiltered average velocity: {}".format(mean))
+        save_to_file_list.append("Unfiltered standard deviation: {}".format(std))
+        ''' Filter points for outliers '''
+        idx_list = []
+        # Get the indexes to remove
+        data = np.array(self.velocity_list)
+        d = np.abs(data - np.median(data))
+        # Get the median and absolute distance to median
+        mdev = np.median(d)
+        s = d / mdev if mdev else 0.
+        m = 2
+        # print(data[s<2])
+
+        ''' Get the indexes of the outliers'''
+        for idx, x in enumerate(self.velocity_list):
+            if s[idx] > m:
+                idx_list.append(idx)
+
+        # remove the indexes of outliers
+        for index in sorted(idx_list, reverse=True):
+            del self.velocity_list[index]
+            del step_list[index]
+
+        print(self.velocity_list)
+        #filtered_list = [x for x in filtered_list if (x > mean - 2 * std)]
+        #filtered_list = [x for x in filtered_list if (x < mean + 2 * std)]
+        mean = np.mean(self.velocity_list)
+        std = np.std(self.velocity_list)
+        save_to_file_list.append("Filtered average velocity: {}".format(mean))
+        save_to_file_list.append("Filtered standard deviation: {}".format(std))
+        self.save_text(save_to_file_list, "Velocities")
+        # self.velocity_list = filtered_list
+        area = 10
+        colors = (0, 0, 0)
+        plt.scatter(step_list, self.velocity_list, c=colors, s=area, alpha=0.5)
+        #plt.plot(step_list, self.velocity_list, linewidth=2, linestyle="-", c="b")
+        plt.title('Filtered velocities')
+        axes = plt.gca()
+        ymin = 0
+        ymax = 5000
+        axes.set_ylim([ymin, ymax])
+        plt.xlabel('frame number')
+        plt.ylabel('velocities')
+        #axes.set_yscale('log')
+        #plt.gca().invert_yaxis()
+        plt.savefig("plots/Filtered_velocities_scatter.png")
+
+
 
 
 class GUI(QMainWindow):
@@ -1963,6 +2057,33 @@ def save_video2():
 
 def get_mag(pt1):
     return (pt1[0] ** 2 + pt1[1] ** 2) ** 0.5
+
+def get_video_length(video_path):
+    """
+    Takes a video and return its length (s), frame count and fps
+    :param video_path: path to video
+    :return: length (seconds), frame count, fps
+    """
+    print("Video path", video_path)
+    try:
+        cap = cv2.VideoCapture(video_path)
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        if fps == 0.0:
+            print("No video found with video path. Please try again with correct video path")
+            sys.exit()
+        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        duration = frame_count / fps
+
+        print('fps = ' + str(fps))
+        print('number of frames = ' + str(frame_count))
+        print('duration (S) = ' + str(duration))
+        minutes = int(duration / 60)
+        seconds = duration % 60
+        print('duration (M:S) = ' + str(minutes) + ':' + str(seconds))
+    except ZeroDivisionError:
+        print("The video path is wrong.")
+        sys.exit()
+    return duration, frame_count, fps
 
 
 def main(argv=None):
