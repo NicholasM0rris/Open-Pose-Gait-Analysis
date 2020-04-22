@@ -13,6 +13,8 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 import time
 import matplotlib.pyplot as plt
+from matplotlib.axes._axes import _log as matplotlib_axes_logger
+matplotlib_axes_logger.setLevel('ERROR')
 
 """
 Create argparse arguments
@@ -336,6 +338,7 @@ class DisplayData:
         self.duration, self.frame_count, self.fps = get_video_length(self.video_path)
         # Get number of steps
         self.velocity_list = []
+        self.stride_length_list = []
         self.correct_leg_swap()
         self.get_number_steps()
         self.get_velocity()
@@ -1205,6 +1208,7 @@ class DisplayData:
         for x, idx in enumerate(step_list):
             try:
                 displacement = abs(get_distance(self.fp("LBigToe", idx), self.fp("RBigToe", idx)))
+                self.stride_length_list.append("Stride length: {}. Frame: {}. Step count: {}".format(displacement, idx, x))
                 number_frames_passed = idx - step_list[x-1]
                 t = number_frames_passed * (1 / self.fps)
                 speed = displacement / t
@@ -1216,6 +1220,8 @@ class DisplayData:
 
             except IndexError:
                 pass
+        # Save the stride length to file
+        self.save_text(self.stride_length_list, "Stride_length")
         filtered_list = np.array(self.velocity_list)
         mean = np.mean(filtered_list)
         std = np.std(filtered_list)
