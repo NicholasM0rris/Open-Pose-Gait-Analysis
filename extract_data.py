@@ -339,9 +339,11 @@ class DisplayData:
         # Get number of steps
         self.velocity_list = []
         self.stride_length_list = []
+        self.cadence = []
         self.correct_leg_swap()
         self.get_number_steps()
         self.get_velocity()
+        self.get_cadence()
 
 
     def plot_points(self, keypoint):
@@ -1288,6 +1290,127 @@ class DisplayData:
         #axes.set_yscale('log')
         #plt.gca().invert_yaxis()
         plt.savefig("plots/Filtered_velocities_scatter3.png")
+
+    def get_cadence(self):
+        """
+        Get the cadence from the step indexes
+        :return: average cadence
+        """
+        colors = (0, 0, 0)
+        area = 10
+        step_list = self.right_foot_index + self.left_foot_index
+        step_list.sort()
+        save_to_file_list = []
+        print(step_list)
+        for idx, count in enumerate(step_list):
+            try:
+                if step_list[idx] == step_list[idx+1]:
+                    del step_list[idx]
+            except IndexError:
+                pass
+
+        for idx, count in enumerate(step_list):
+            if idx == 0:
+                pass
+            else:
+                frames_passed = step_list[idx] - step_list[idx-1]
+                time_passed = frames_passed * (1 / self.fps)
+                cadence = 60 / time_passed
+                self.cadence.append(cadence)
+
+        mean = np.mean(self.cadence)
+        std = np.std(self.cadence)
+        save_to_file_list.append("Unfiltered mean: {}".format(mean))
+        save_to_file_list.append("Unfiltered std: {}".format(std))
+        print("Average cadence: ", mean)
+        print("std: ", std)
+        print("Cadence", self.cadence)
+        print("Step list", step_list)
+
+        plt.figure()
+        plt.plot(step_list[1:], self.cadence, linewidth=2, linestyle="-", c="b")
+        plt.title('Unfiltered cadence')
+        axes = plt.gca()
+        ymin = 0
+        ymax = 2000
+        axes.set_ylim([ymin, ymax])
+        plt.xlabel('frame number')
+        plt.ylabel('Cadence')
+        # axes.set_yscale('log')
+        # plt.gca().invert_yaxis()
+        plt.savefig("plots/UnfilteredCadence.png")
+
+        plt.figure()
+        plt.scatter(step_list[1:], self.cadence, c=colors, s=area, alpha=0.5)
+        plt.title('Unfiltered cadence')
+        axes = plt.gca()
+        ymin = 0
+        ymax = 2000
+        axes.set_ylim([ymin, ymax])
+        plt.xlabel('frame number')
+        plt.ylabel('Cadence')
+        # axes.set_yscale('log')
+        # plt.gca().invert_yaxis()
+        plt.savefig("plots/ScatterUnfilteredCadence.png")
+
+        idx_list = []
+        data = np.array(self.cadence)
+        d = np.abs(data - np.median(data))
+        # Get the median and absolute distance to median
+        mdev = np.median(d)
+        s = d / mdev if mdev else 0.
+        m = 2
+        # print(data[s<2])
+
+        ''' Get the indexes of the outliers'''
+        for idx, x in enumerate(self.cadence):
+            if s[idx] > m:
+                idx_list.append(idx)
+
+        # remove the indexes of outliers
+        for index in sorted(idx_list, reverse=True):
+            del self.cadence[index]
+            del step_list[index]
+
+        mean = np.mean(self.cadence)
+        std = np.std(self.cadence)
+        save_to_file_list.append("Filtered mean: {}".format(mean))
+        save_to_file_list.append("filtered std: {}".format(std))
+        print("Average filtered cadence: ", mean)
+        print("filtered std: ", std)
+        print("Filtered Cadence", self.cadence)
+
+        plt.figure()
+        plt.plot(step_list[1:], self.cadence, linewidth=2, linestyle="-", c="b")
+        plt.title('Filtered cadence')
+        axes = plt.gca()
+        ymin = 0
+        ymax = 2000
+        axes.set_ylim([ymin, ymax])
+        plt.xlabel('frame number')
+        plt.ylabel('Cadence')
+        # axes.set_yscale('log')
+        # plt.gca().invert_yaxis()
+        plt.savefig("plots/FilteredCadence.png")
+
+        plt.figure()
+        plt.scatter(step_list[1:], self.cadence, c=colors, s=area, alpha=0.5)
+        plt.title('Filtered cadence')
+        axes = plt.gca()
+        ymin = 0
+        ymax = 2000
+        axes.set_ylim([ymin, ymax])
+        plt.xlabel('frame number')
+        plt.ylabel('Cadence')
+        # axes.set_yscale('log')
+        # plt.gca().invert_yaxis()
+        plt.savefig("plots/ScatterFilteredCadence.png")
+
+        for idx, cadence in enumerate(self.cadence):
+            save_to_file_list.append("Frame number: {} Cadence: {}".format(step_list[idx], cadence))
+        self.save_text(save_to_file_list, "Cadence")
+
+        # plt.show()
 
 
 
