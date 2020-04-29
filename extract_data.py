@@ -14,6 +14,7 @@ from PyQt5.QtGui import *
 import time
 import matplotlib.pyplot as plt
 from matplotlib.axes._axes import _log as matplotlib_axes_logger
+
 matplotlib_axes_logger.setLevel('ERROR')
 
 """
@@ -344,7 +345,6 @@ class DisplayData:
         self.get_number_steps()
         self.get_velocity()
         self.get_cadence()
-
 
     def plot_points(self, keypoint):
         """
@@ -1028,8 +1028,6 @@ class DisplayData:
                 pass
         self.save_text(detected_frame_list, "Detected_leg_swap_frame_list")
 
-
-
     def get_number_steps(self):
         """
         Calculate the number of steps from the sagittal plane
@@ -1060,7 +1058,6 @@ class DisplayData:
         y1_left = self.fp("LHeel", 0)[1]
         y2_left = self.fp("LHeel", 1)[1]
 
-
         for idx, path in enumerate(self.data.input_files):
             try:
                 x1_r = self.fp("RHeel", idx)[0]
@@ -1077,9 +1074,9 @@ class DisplayData:
                                 y2_r = self.fp("RHeel", idx + 1 + i)[1]
                                 rate = abs(y1_r - y2_r)
                                 i += 1
-                                if rate < initial_rate/2:
+                                if rate < initial_rate / 2:
                                     self.right_foot_count += 1
-                                    self.right_foot_index.append(idx+i)
+                                    self.right_foot_index.append(idx + i)
                                     break
 
                         except IndexError:
@@ -1210,8 +1207,9 @@ class DisplayData:
         for x, idx in enumerate(step_list):
             try:
                 displacement = abs(get_distance(self.fp("LBigToe", idx), self.fp("RBigToe", idx)))
-                self.stride_length_list.append("Stride length: {}. Frame: {}. Step count: {}".format(displacement, idx, x))
-                number_frames_passed = idx - step_list[x-1]
+                self.stride_length_list.append(
+                    "Stride length: {}. Frame: {}. Step count: {}".format(displacement, idx, x))
+                number_frames_passed = idx - step_list[x - 1]
                 t = number_frames_passed * (1 / self.fps)
                 speed = displacement / t
                 if speed == float('+inf') or speed == float('-inf'):
@@ -1269,8 +1267,8 @@ class DisplayData:
             del step_list[index]
 
         print(self.velocity_list)
-        #filtered_list = [x for x in filtered_list if (x > mean - 2 * std)]
-        #filtered_list = [x for x in filtered_list if (x < mean + 2 * std)]
+        # filtered_list = [x for x in filtered_list if (x > mean - 2 * std)]
+        # filtered_list = [x for x in filtered_list if (x < mean + 2 * std)]
         mean = np.mean(self.velocity_list)
         std = np.std(self.velocity_list)
         save_to_file_list.append("Filtered average velocity: {}".format(mean))
@@ -1279,7 +1277,7 @@ class DisplayData:
         # self.velocity_list = filtered_list
         plt.figure()
         plt.scatter(step_list, self.velocity_list, c=colors, s=area, alpha=0.5)
-        #plt.plot(step_list, self.velocity_list, linewidth=2, linestyle="-", c="b")
+        # plt.plot(step_list, self.velocity_list, linewidth=2, linestyle="-", c="b")
         plt.title('Filtered velocities')
         axes = plt.gca()
         ymin = 0
@@ -1287,8 +1285,8 @@ class DisplayData:
         axes.set_ylim([ymin, ymax])
         plt.xlabel('frame number')
         plt.ylabel('velocities')
-        #axes.set_yscale('log')
-        #plt.gca().invert_yaxis()
+        # axes.set_yscale('log')
+        # plt.gca().invert_yaxis()
         plt.savefig("plots/Filtered_velocities_scatter3.png")
 
     def get_cadence(self):
@@ -1304,7 +1302,7 @@ class DisplayData:
         print(step_list)
         for idx, count in enumerate(step_list):
             try:
-                if step_list[idx] == step_list[idx+1]:
+                if step_list[idx] == step_list[idx + 1]:
                     del step_list[idx]
             except IndexError:
                 pass
@@ -1313,7 +1311,7 @@ class DisplayData:
             if idx == 0:
                 pass
             else:
-                frames_passed = step_list[idx] - step_list[idx-1]
+                frames_passed = step_list[idx] - step_list[idx - 1]
                 time_passed = frames_passed * (1 / self.fps)
                 cadence = 60 / time_passed
                 self.cadence.append(cadence)
@@ -1411,9 +1409,6 @@ class DisplayData:
         self.save_text(save_to_file_list, "Cadence")
 
         # plt.show()
-
-
-
 
 
 class GUI(QMainWindow):
@@ -2204,6 +2199,7 @@ def save_video2():
 
 def get_mag(pt1):
     return (pt1[0] ** 2 + pt1[1] ** 2) ** 0.5
+
 
 def get_video_length(video_path):
     """

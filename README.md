@@ -1,3 +1,13 @@
+Note: Recent commit adding cadence requires an extra directory. Comment out line 
+339:
+
+```self.duration, self.frame_count, self.fps = get_video_length(self.video_path)```
+
+and line 347, and possibly 346 to avoid getting an error from missing file
+
+```self.get_velocity()```
+
+```self.get_cadence()```
 ### Data:
 Example data processed with Open Pose can be found here:
 
