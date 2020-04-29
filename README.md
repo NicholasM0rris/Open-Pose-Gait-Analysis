@@ -3,9 +3,7 @@ Note: Recent commit adding cadence requires an extra directory. Comment out line
 
 ```self.duration, self.frame_count, self.fps = get_video_length(self.video_path)```
 
-and line 347, and possibly 346 to avoid getting an error from missing file
-
-```self.get_velocity()```
+and line 34 to avoid getting an error from missing file
 
 ```self.get_cadence()```
 ### Data:
