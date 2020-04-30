@@ -32,6 +32,34 @@ ap.add_argument('-vl', '-video_length', required=False, type=float, help='Add th
 
 args = vars(ap.parse_args())
 
+''' Create directories if they do not exist '''
+
+try:
+    if not os.path.exists('output_video'):
+        os.makedirs('output_video')
+    if not os.path.exists('output_images'):
+        os.makedirs('output_images')
+    if not os.path.exists('output_images'):
+        os.makedirs('output_coronal_images')
+    if not os.path.exists('processed_video'):
+        os.makedirs('processed_video')
+    if not os.path.exists('plots'):
+        os.makedirs('plots')
+    if not os.path.exists('metrics'):
+        os.makedirs('metrics')
+    if not os.path.exists('input_data'):
+        os.makedirs('input_data')
+    if not os.path.exists('input_images'):
+        os.makedirs('input_images')
+    if not os.path.exists('coronal_input_data'):
+        os.makedirs('input_data')
+    if not os.path.exists('coronal_input_images'):
+        os.makedirs('input_images')
+
+except OSError:
+    print("OSERROR: Lacking perms to create directories")
+    sys.exit()
+
 # Define key point dictionary
 key_points = {
     "Nose": 0,
