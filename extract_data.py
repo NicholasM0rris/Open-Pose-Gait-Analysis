@@ -32,14 +32,14 @@ ap.add_argument('-vl', '-video_length', required=False, type=float, help='Add th
 
 args = vars(ap.parse_args())
 
-''' Create directories if they do not exist '''
+''' Initialise necessary directories  '''
 
 try:
     if not os.path.exists('output_video'):
         os.makedirs('output_video')
     if not os.path.exists('output_images'):
         os.makedirs('output_images')
-    if not os.path.exists('output_images'):
+    if not os.path.exists('output_coronal_images'):
         os.makedirs('output_coronal_images')
     if not os.path.exists('processed_video'):
         os.makedirs('processed_video')
@@ -1459,7 +1459,7 @@ class GUI(QMainWindow):
         self.palette.setColor(QPalette.ButtonText, Qt.white)
         self.setPalette(self.palette)
         self.setGeometry(50, 50, 500, 500)
-        self.setWindowTitle("Early development user interface V6.0.9.13")
+        self.setWindowTitle("Early development user interface A204 V2.31.26643")
         self.display = display
         self.display.gui = self
         # self.app = QApplication([])
@@ -1573,7 +1573,7 @@ class GUI(QMainWindow):
         :return:
         """
         self.worker_thread2 = Worker2(self)
-        self.worker_thread2.finished.connect(self.process_complete_messagebox2)
+        self.worker_thread2.finish_signal2.connect(self.process_complete_messagebox2)
         self.worker_thread2.start()
         ''' Assign worker signal to function '''
         self.worker_thread2.start_signal2.connect(self.no_option_messagebox)
@@ -1586,7 +1586,7 @@ class GUI(QMainWindow):
         """
         # Remove any current images in output file
         self.worker_thread = Worker(self)
-        self.worker_thread.finished.connect(self.process_complete_messagebox)
+        self.worker_thread.finish_signal.connect(self.process_complete_messagebox)
         self.worker_thread.start()
         self.worker_thread.start_signal.connect(self.no_option_messagebox)
 
@@ -2001,7 +2001,8 @@ class Worker(QThread):
     """
     Worker thread for processing measurements in the sagittal plane
     """
-    start_signal = pyqtSignal(int)
+    start_signal = pyqtSignal()
+    finish_signal = pyqtSignal()
 
     def __init__(self, gui, parent=None):
         # super(External2, self).__init__()
@@ -2041,11 +2042,18 @@ class Worker(QThread):
             # If no options selected send a signal
             self.start_signal.emit()
 
+
         else:
             self.gui.display.display_step_number_overlay()
             for frame in self.gui.display.frame_list:
                 save_frame(frame)
-            save_video()
+            # noinspection PyBroadException
+            try:
+                save_video()
+                self.finish_signal.emit()
+
+            except Exception:
+                self.quit()
             # self.process_complete_messagebox()
 
 
@@ -2053,7 +2061,8 @@ class Worker2(QThread):
     """
     Worker thread for processing measurements in the coronal plane
     """
-    start_signal2 = pyqtSignal(int)
+    start_signal2 = pyqtSignal()
+    finish_signal2 = pyqtSignal()
 
     def __init__(self, gui, parent=None):
         # super(External2, self).__init__()
@@ -2080,7 +2089,14 @@ class Worker2(QThread):
         else:
             for frame in self.gui.display.coronal_frame_list:
                 save_frame2(frame)
-            save_video2()
+            # noinspection PyBroadException
+            try:
+                save_video2()
+                self.finish_signal2.emit()
+
+            except Exception:
+                self.quit()
+
 
 
 def save_frame(frame):
