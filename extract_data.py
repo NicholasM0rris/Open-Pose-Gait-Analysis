@@ -530,9 +530,9 @@ class DisplayData:
         b = (p1.x - p3.x, p1.y - p3.y)
         a dot b = mag(a)mag(b)cos(theta)
         Returns the angle from three points by finding the cross product
-        :param p1: point 1 (x,y)
+        :param p3: point 1 (x,y)
         :param p2: point 2 (x,y)
-        :param p3: common point to pt 1 & 2 (x,y)
+        :param p1: common point to pt 1 & 2 (x,y)
         :return: angle in degrees
         """
         a = (p1[0] - p2[0], p1[1] - p2[1])
@@ -1028,7 +1028,7 @@ class DisplayData:
         for idx, frame in enumerate(self.data.input_files):
             try:
                 ''' If a high rate change is detected swap the legs'''
-                if rate_change[idx] > average_rate_change * 2:
+                if rate_change[idx] > average_rate_change * 3:
                     detected_frame_list.append(idx)
                     print("Possible leg swap at frame {}".format(idx))
 
@@ -1459,7 +1459,7 @@ class GUI(QMainWindow):
         self.palette.setColor(QPalette.ButtonText, Qt.white)
         self.setPalette(self.palette)
         self.setGeometry(50, 50, 500, 500)
-        self.setWindowTitle("Early development user interface A204 V2.31.26643")
+        self.setWindowTitle("Early development user interface A204 V2.31")
         self.display = display
         self.display.gui = self
         # self.app = QApplication([])
