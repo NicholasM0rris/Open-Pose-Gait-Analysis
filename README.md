@@ -1,3 +1,13 @@
+### Update: 
+`op_testing.py` should now accept original unprocessed video
+ and produce everything required to run the program. The program should also populate and create all 
+ required directories automagically. 
+ 
+ You can now just run main.py, which will run
+ the cleaned up support files.
+
+
+
 Note: Recent commit adding cadence requires an extra directory. Comment out line 
 339:
 
