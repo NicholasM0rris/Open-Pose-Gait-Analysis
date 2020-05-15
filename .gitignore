@@ -28,3 +28,5 @@ Output.avi
 Coronal_Output.avi
 input_data/
 testvideo.py
+support/__pycache__/
+__pycache__/

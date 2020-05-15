@@ -13,7 +13,7 @@ import argparse
 # Import Openpose (Windows)
 dir_path = os.path.dirname(os.path.realpath(__file__))
 # Need Open Pose installed to use
-
+'''
 try:
     # Windows Import
     if platform.system() == "Windows":
@@ -29,7 +29,7 @@ try:
         from openpose import pyopenpose as op
 except Exception as e:
     raise e
-
+'''
 # Flags
 parser = argparse.ArgumentParser()
 parser.add_argument("--image_dir", default="../../../examples/media/",
@@ -74,6 +74,7 @@ class GUI(QMainWindow):
         self.duration = 'n/a'
         self.fps = 'n/a'
         self.frame_count = 'n/a'
+        self.setGeometry(50, 50, 400, 150)
 
         self.make_tabs()
         self.make_param_labels()
