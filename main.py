@@ -1,4 +1,5 @@
 import argparse
+
 """
 Create argparse arguments
 """
@@ -14,14 +15,10 @@ ap.add_argument('-vl', '-video_length', required=False, type=float, help='Add th
 
 args = vars(ap.parse_args())
 
-
-
-
 import support.user_interface as interface
 import support.extract_input_data as extract_data
 import support.display_data as display_data
 import sys
-
 
 
 def main(argv=None):
