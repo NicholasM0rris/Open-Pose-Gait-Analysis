@@ -1,14 +1,14 @@
-### Update: 
+### Usage
 `op_testing.py` should now accept original unprocessed video
- and produce everything required to run the program. The program should also populate and create all 
- required directories automagically. 
+ and produce the input data in their respective
+ repositories required to run the program (`main.py`).
  
  You can now just run main.py, which will run
  the cleaned up support files.
 
 
 
-Note: Recent commit adding cadence requires an extra directory. Comment out line 
+Note: Recent commit adding cadence may still require an extra directory. Comment out line 
 339:
 
 ```self.duration, self.frame_count, self.fps = get_video_length(self.video_path)```
@@ -23,7 +23,40 @@ https://1drv.ms/u/s!Am7KReNR0aJnmVMnFB9eom9GWGjt?e=shrSjG
 
 You can copy and move these folders into the same directory as the `extract_data.py` file.
 
-<h3> Usage </h3>
+
+### Installation
+The required libraries can be installed by downloading the requirements.txt with pip:
+
+```py -3.7-64 -m pip install requirements.txt```
+
+or
+
+```pip3 install requirements.txt```
+
+Additionally the input directories should be created in the 
+correct loccations and named correctly.
+The program should then be ready to run after the installations.
+
+Additionally, Open Pose must be installed to use `op_testing.py`
+
+Documentation on how to install Open Pose can be found at https://github.com/CMU-Perceptual-Computing-Lab/openpose
+
+However the documentation is... Not very good. Alternatively the example data can be used with `main.py`
+### How to use the program
+
+After running the command to start the program, the user interface should appear.
+The interface shows two tabs: One for sagittal and one for coronal. You can select
+as many measurements are required, and once ready press start to commence
+processing.
+ 
+ The progress bar will tell the user when the processing is complete, 
+and the processed images will appear in `output_images` or `coronal_output_images`.
+However, you must wait until a info window pops up to tell you that the
+full operation is complete, as the program will continue to save the images to a video 
+that can be found in `processed_video`. It is not recommended to start another process
+until this is complete.
+
+<h3> Usage (Outdated) </h3>
  All the code has been compiled into a single file with everything required
   to run it in <code>extract_data.py</code> (excluding the input data).
  <br> <br>
@@ -55,7 +88,7 @@ This command is telling the program to use the directory
 op_images/ for the input images, output1/ for JSON data, and the other two arguments 
 for the coronal plane data. This will also tell the program to set the output video to 20 fps (default 1 fps)
 
-#### Note: Default directories
+#### Note: Default directories (No longer necessary)
 The input images ***MUST*** be in the correct folders, or at this current time 
 in development unpredicatable errors may occur. It should tell you if 
 the directories are not named correctly, however there is no guarantee what may happen!
@@ -66,33 +99,6 @@ data are:
 `coronal_images` and `coronal_input_data`
 
 
-### Installation
-The required libraries can be installed by downloading the requirements.txt with pip:
-
-```py -3.7-64 -m pip install requirements.txt```
-
-or
-
-```pip3 install requirements.txt```
-
-Additionally the input directories should be created in the 
-correct loccations and named correctly.
-The program should then be ready to run after the installations.
-
-#### Directories to create and populate:
+#### Directories to create and populate (Update: Should be done automatically):
 `input_images` (open pose images) and  `input_data` (JSON input data) for sagittal plane, and named a little better are 
 `coronal_images` and `coronal_input_data`
-
-### How to use the program
-
-After running the command to start the program, the user interface should appear.
-The interface shows two tabs: One for sagittal and one for coronal. You can select
-as many measurements are required, and once ready press start to commence
-processing.
- 
- The progress bar will tell the user when the processing is complete, 
-and the processed images will appear in `output_images` or `coronal_output_images`.
-However, you must wait until a info window pops up to tell you that the
-full operation is complete, as the program will continue to save the images to a video 
-that can be found in `processed_video`. It is not recommended to start another process
-until this is complete.
