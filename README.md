@@ -56,16 +56,7 @@ full operation is complete, as the program will continue to save the images to a
 that can be found in `processed_video`. It is not recommended to start another process
 until this is complete.
 
-<h3> Usage (Outdated) </h3>
- All the code has been compiled into a single file with everything required
-  to run it in <code>extract_data.py</code> (excluding the input data).
- <br> <br>
- The file can be run normally with the command:
- <br>
- 
- ```py -3.7-64 extract_data.py```
- 
- This will assume you are using the default folders for data and images. Alternatively 
+ Running `main.py` will assume you are using the default folders for data and images. Alternatively 
  you can specify the location of the data folders with parse arguments:
  
  ```-i ``` specificies saggital plane images
@@ -82,23 +73,9 @@ until this is complete.
  
  An example:
  <br>
- ```py -3.7-64 extract_data.py -i op_images -d output1 -ci c_images -cd c_output --fps 20```
+ ```py -3.7-64 main.py -i op_images -d output1 -ci c_images -cd c_output --fps 20```
  
 This command is telling the program to use the directory
 op_images/ for the input images, output1/ for JSON data, and the other two arguments 
 for the coronal plane data. This will also tell the program to set the output video to 20 fps (default 1 fps)
 
-#### Note: Default directories (No longer necessary)
-The input images ***MUST*** be in the correct folders, or at this current time 
-in development unpredicatable errors may occur. It should tell you if 
-the directories are not named correctly, however there is no guarantee what may happen!
-The default directories for the
-data are:
-
-`input_images` and  `input_data` (JSON input data) for sagittal plane, and named a little better are 
-`coronal_images` and `coronal_input_data`
-
-
-#### Directories to create and populate (Update: Should be done automatically):
-`input_images` (open pose images) and  `input_data` (JSON input data) for sagittal plane, and named a little better are 
-`coronal_images` and `coronal_input_data`
