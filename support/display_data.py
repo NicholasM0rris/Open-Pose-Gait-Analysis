@@ -737,12 +737,16 @@ class DisplayData:
                     LHeel = self.fp("LHeel", idx)
 
                     ''' Do the swapping '''
-                    # TODO Implement the actual data swapping!
-                    LKnee, RKnee = RKnee, LKnee
-                    LAnkle, RAnkle = RAnkle, LAnkle
-                    LBigToe, RBigToe = RBigToe, LBigToe
-                    LSmallToe, RSmallToe = RSmallToe, LSmallToe
-                    LHeel, RHeel = RHeel, LHeel
+                    self.data.key_points["LKnee"][idx][:-1], self.data.key_points["RKnee"][idx][:-1] = RKnee, LKnee
+                    # LKnee, RKnee = RKnee, LKnee
+                    self.data.key_points["LAnkle"][idx][:-1], self.data.key_points["RAnkle"][idx][:-1] = RAnkle, LAnkle
+                    # LAnkle, RAnkle = RAnkle, LAnkle
+                    self.data.key_points["LBigToe"][idx][:-1], self.data.key_points["RBigToe"][idx][:-1] = RBigToe, LBigToe
+                    # LBigToe, RBigToe = RBigToe, LBigToe
+                    self.data.key_points["LSmallToe"][idx][:-1], self.data.key_points["RSmallToe"][idx][:-1] = RSmallToe, LSmallToe
+                    # LSmallToe, RSmallToe = RSmallToe, LSmallToe
+                    self.data.key_points["LHeel"][idx][:-1], self.data.key_points["RHeel"][idx][:-1] = RHeel, LHeel
+                    # LHeel, RHeel = RHeel, LHeel
 
             except IndexError:
                 pass
