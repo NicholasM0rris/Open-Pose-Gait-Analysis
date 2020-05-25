@@ -31,6 +31,7 @@ class GUI(QMainWindow):
         self.setWindowTitle("Early development user interface A204 V2.31")
         self.display = display
         self.display.gui = self
+        self.frame_count = self.display.frame_count
         # self.app = QApplication([])
         QApplication.setStyle(QStyleFactory.create("Fusion"))
 
@@ -186,7 +187,16 @@ class GUI(QMainWindow):
             my_path = os.path.abspath(os.path.dirname(__file__))
             path = os.path.join(my_path, "processed_video\\Output.avi")
             # print("DIRNAME", path, my_path)
-            startfile(path)
+            try:
+                startfile(path)
+            except FileNotFoundError:
+                pass
+            try:
+                path = os.path.join(my_path, "..\\Output.avi")
+                startfile(path)
+
+            except FileNotFoundError:
+                print("Preview not supported currently . . . #TODO")
         else:
             pass
 
@@ -483,7 +493,7 @@ class GUI(QMainWindow):
         self.progress2.setValue(value)
 
 
-TIME_LIMIT = 2400000000000000000000000000
+TIME_LIMIT = 2400000000000000
 
 
 class External(QThread):
@@ -520,12 +530,15 @@ class External(QThread):
             self.count += 1
             # If the frame number is different to processed frame number
             if self.frame != self.gui.display.frame_number:
-                print(self.frame, self.gui.display.frame_number, self.progress)
+                print("Saving to video . . . Progress ({}, {}) / {} frames. {}% complete. {} Frames remaining . . .".format(self.frame, self.gui.display.frame_number, self.gui.frame_count, self.progress, self.gui.frame_count - self.frame))
                 # Increase the progress bar and set to new frame
                 self.frame = self.gui.display.frame_number
                 self.progress += add
                 # self.gui.onCountChanged(self.progress)
                 self.mySignal.emit(self.progress)
+                if self.gui.frame_count - self.frame < 1:
+                    print("Process complete . . . Please wait.")
+        print("Timer finished")
 
 
 # TODO fix coronal plane bugs
