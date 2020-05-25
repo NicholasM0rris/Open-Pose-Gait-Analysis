@@ -222,8 +222,30 @@ class ExtractData:
                     try:
                         # First frame - need to extrapolate instead
                         if idx == 0:
-                            item[0] = 2 * self.key_points[key][idx + 1][0] - self.key_points[key][idx + 2][0]
-                            item[1] = 2 * self.key_points[key][idx + 1][1] - self.key_points[key][idx + 2][1]
+                            # If the frame after the first frame is not missing ( not zero )
+                            if (tuple(self.key_points[key][idx + 1]) != (0, 0, 0)) and (
+                                    tuple(self.key_points[key][idx + 2]) != (0, 0, 0)):
+                                item[0] = 2 * self.key_points[key][idx + 1][0] - self.key_points[key][idx + 2][0]
+                                item[1] = 2 * self.key_points[key][idx + 1][1] - self.key_points[key][idx + 2][1]
+                            else:
+                                # The points after the first frame are also missing. Find frame that is not missing
+                                frame_x = self.key_points[key][idx + 1][0]
+                                frame_y = self.key_points[key][idx + 1][1]
+                                iterator = 0
+                                try:
+                                    while frame_x == 0 and frame_y == 0:
+                                        iterator += 1
+                                        frame_x = self.key_points[key][idx + 1 + iterator][0]
+                                        frame_y = self.key_points[key][idx + 1 + iterator][1]
+                                    # Assume the next frame will have valid data points and find difference
+                                    diff_x = self.key_points[key][idx + 2 + iterator][0] - frame_x
+                                    diff_y = self.key_points[key][idx + 2 + iterator][1] - frame_y
+                                    # Correct all frames from first frame to valid data points
+                                    for indx, i in enumerate(reversed(range(iterator + 1))):
+                                        self.key_points[key][i][0] -= diff_x * (indx + 1)
+                                        self.key_points[key][i][1] -= diff_y * (indx + 1)
+                                except IndexError:
+                                    pass
                         # Last frame - need to extrapolate
                         elif idx == len(self.key_points[key]) - 1:
                             item[0] = 2 * self.key_points[key][idx - 1][0] - self.key_points[key][idx - 2][0]
@@ -231,12 +253,58 @@ class ExtractData:
                         # Else interpolate average of f-1 and f+1
                         else:
                             # print("Changing index {} item {} to ".format(idx, item))
-                            item[0] = (self.key_points[key][idx - 1][0] + self.key_points[key][idx + 1][0]) / 2
-                            item[1] = (self.key_points[key][idx - 1][1] + self.key_points[key][idx + 1][1]) / 2
+                            # If the frame after the missing data point is valid: interpolate using that point
+                            if tuple(self.key_points[key][idx + 1]) != (0, 0, 0):
+                                item[0] = (self.key_points[key][idx - 1][0] + self.key_points[key][idx + 1][0]) / 2
+                                item[1] = (self.key_points[key][idx - 1][1] + self.key_points[key][idx + 1][1]) / 2
                             # print("this", item)
-                    except IndexError:
-                        print("Some index error in debugging . . . . . ")
-                        sys.exit()
+                            # However if the point afterwords is also missing, search for non missing point
+                            else:
+                                print("True", idx, key)
+                                frame_x = self.key_points[key][idx + 1][0]
+                                frame_y = self.key_points[key][idx + 1][1]
+                                iterator = 0
+                                try:
+                                    while frame_x == 0 and frame_y == 0:
+                                        iterator += 1
+                                        # Iterate over frames until the points are no longer missing
+                                        frame_x = self.key_points[key][idx + 1 + iterator][0]
+                                        frame_y = self.key_points[key][idx + 1 + iterator][1]
+
+                                    diff_x = (frame_x - self.key_points[key][idx-1][0]) / (iterator + 2)
+                                    diff_y = (frame_y - self.key_points[key][idx-1][1]) / (iterator + 2)
+
+                                    for indx, inter in enumerate(reversed(range(iterator+1))):
+
+                                        self.key_points[key][idx + inter][0] = frame_x - diff_x * (indx + 1)
+                                        self.key_points[key][idx + inter][1] = frame_y - diff_y * (indx + 1)
+                                    ''' FOR TESTING
+                                    if key == "LKnee":
+                                        print('framex, framey, iterator, diffx, diffy', frame_x, frame_y, iterator,
+                                              diff_x, diff_y)
+                                        print(self.key_points[key][idx][0], self.key_points[key][idx][1])
+                                        print('indx, inter', indx, inter)
+                                        print('idx: ', idx)
+                                        print('pre', self.key_points[key][idx - 1][0],
+                                              self.key_points[key][idx - 1][1])
+                                        print('curret', self.key_points[key][idx][0],
+                                              self.key_points[key][idx][1])
+                                        print('after1', self.key_points[key][idx + 1][0],
+                                              self.key_points[key][idx + 1][1])
+                                        print('after2', self.key_points[key][idx + 2][0],
+                                              self.key_points[key][idx + 2][1])
+                                        sys.exit()
+                                    '''
+                                except IndexError:
+                                    print("Reach end of index while interpolating")
+                                    pass
+
+
+                    except IndexError as e:
+                        print(key, self.key_points[key])
+                        raise e
+                        # print("Some index error in debugging . . . . . ")
+                        # sys.exit()
 
     def interpolate_all_coronal_keypoints(self):
         """
