@@ -214,7 +214,15 @@ class GUI(QMainWindow):
             my_path = os.path.abspath(os.path.dirname(__file__))
             path = os.path.join(my_path, "processed_video\\Coronal_Output.avi")
             # print("DIRNAME", path, my_path)
-            startfile(path)
+            try:
+                startfile(path)
+            except FileNotFoundError:
+                pass
+            try:
+                path = os.path.join(my_path, "..\\Coronal_Output.avi")
+                startfile(path)
+            except FileNotFoundError:
+                print("Preview file not found")
         else:
             pass
 
