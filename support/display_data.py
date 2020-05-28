@@ -15,6 +15,7 @@ class DisplayData:
     """
 
     def __init__(self, data):
+        self.detected_frame_list = []
         self.right_foot_count = 0
         self.left_foot_count = 0
         # Define list for index/frames in which step is made
@@ -62,8 +63,12 @@ class DisplayData:
         self.cadence = []
         self.correct_leg_swap()
         self.get_number_steps()
-        self.get_velocity()
-        self.get_cadence()
+        # In testing stage
+        try:
+            self.get_velocity()
+            self.get_cadence()
+        except:
+            pass
 
     def plot_points(self, keypoint):
         """
@@ -141,16 +146,21 @@ class DisplayData:
             cv2.circle(frame, (int(keypoint[0]), int(keypoint[1])), 10, (0, 0, 255), -1)
         return frame
 
-    def add_line_between_points(self, frame, points, thickness):
+    def add_line_between_points(self, frame, points, thickness, colour=None):
         """
         Adds a line overlay between two points and puts pixel distance text
+        :param colour:
+        :param thickness:
         :param frame:
         :param points:
         :return:
         """
+        if colour == None:
+            colour = (0, 255, 0)
+
         point1 = list(map(int, points[0]))
         point2 = list(map(int, points[1]))
-        cv2.line(frame, tuple(point1), tuple(point2), (0, 255, 0), thickness=thickness, lineType=8)
+        cv2.line(frame, tuple(point1), tuple(point2), colour, thickness=thickness, lineType=8)
 
         # print("pt1,pt2", point1, point2)
 
@@ -300,7 +310,7 @@ class DisplayData:
                 frame = self.add_line_between_points(frame,
                                                      [self.fp("RKnee", idx), self.fp("MidHip", idx)], 16)
                 frame = self.add_line_between_points(frame,
-                                                     [self.fp("LKnee", idx), self.fp("MidHip", idx)], 16)
+                                                     [self.fp("LKnee", idx), self.fp("MidHip", idx)], 16, (255, 0, 0))
                 org = tuple([int(self.fp("MidHip", idx)[0]), int(self.fp("MidHip", idx)[1])])
                 font = cv2.FONT_HERSHEY_SIMPLEX
                 fontscale = 1
@@ -681,27 +691,35 @@ class DisplayData:
         xHeel, xBigToe, xKnee, xSmallToe and xAnkle should be swapped
         :return:
         """
-        right_knee_direction = 0
-        left_knee_direction = 0
+        right_knee_direction = 1
+        left_knee_direction = 1
         ''' Define initial x1 and x2 '''
         RKnee_x1 = self.fp("RKnee", 0)[0]
         RKnee_x2 = self.fp("RKnee", 1)[0]
         RKnee_x3 = self.fp("RKnee", 2)[0]
         if RKnee_x1 > RKnee_x2:
-            right_knee_direction = 1
+            right_knee_direction = 0
         elif RKnee_x1 < RKnee_x2:
-            right_knee_direction = 2
+            right_knee_direction = 1
         ''' Get the rate of change '''
         change1 = RKnee_x2 - RKnee_x1
         change2 = RKnee_x3 - RKnee_x2
         rate_change = [change1 - change2]
         average_rate_change = 0
+        directions = dict()
+
         ''' Iterate over the data files to look for leg swaps '''
         for idx, path in enumerate(self.data.input_files):
             try:
+
                 RKnee_x1 = self.fp("RKnee", idx)[0]
                 RKnee_x2 = self.fp("RKnee", idx + 1)[0]
                 RKnee_x3 = self.fp("RKnee", idx + 2)[0]
+                if RKnee_x1 > RKnee_x2:
+                    right_knee_direction = 0
+                elif RKnee_x1 < RKnee_x2:
+                    right_knee_direction = 1
+                directions[idx] = right_knee_direction
                 change1 = RKnee_x2 - RKnee_x1
                 change2 = RKnee_x3 - RKnee_x2
                 rate_change.append(change1 - change2)
@@ -715,12 +733,12 @@ class DisplayData:
             abs_sum += abs(value)
         average_rate_change = abs_sum / len(rate_change)
         ''' Check if there is a rate change twice the average rate change'''
-        detected_frame_list = []
         for idx, frame in enumerate(self.data.input_files):
             try:
                 ''' If a high rate change is detected swap the legs'''
-                if rate_change[idx] > average_rate_change * 3:
-                    detected_frame_list.append(idx)
+                # print('directions',directions)
+                if (rate_change[idx] > average_rate_change * 3):# and (directions[idx-1] != directions[idx]):
+                    self.detected_frame_list.append(idx)
                     print("Possible leg swap at frame {}".format(idx))
 
                     ''' Get the points '''
@@ -750,7 +768,7 @@ class DisplayData:
 
             except IndexError:
                 pass
-        self.save_text(detected_frame_list, "Detected_leg_swap_frame_list")
+        self.save_text(self.detected_frame_list, "Detected_leg_swap_frame_list")
 
     def get_number_steps(self):
         """
@@ -794,11 +812,13 @@ class DisplayData:
                         initial_rate = abs(y1_r - y2_r)
                         try:
                             for i in range(5):
+                                if idx in self.detected_frame_list:
+                                    break
                                 y1_r = self.fp("RHeel", idx + i)[1]
                                 y2_r = self.fp("RHeel", idx + 1 + i)[1]
                                 rate = abs(y1_r - y2_r)
                                 i += 1
-                                if rate < initial_rate / 2:
+                                if rate < initial_rate / 1.8:
                                     self.right_foot_count += 1
                                     self.right_foot_index.append(idx + i)
                                     break
@@ -836,11 +856,13 @@ class DisplayData:
                         initial_rate = abs(y1_left - y2_left)
                         try:
                             for i in range(5):
+                                if idx in self.detected_frame_list:
+                                    break
                                 y1_left = self.fp("LHeel", idx + i)[1]
                                 y2_left = self.fp("LHeel", idx + 1 + i)[1]
                                 rate = abs(y1_left - y2_left)
                                 i += 1
-                                if rate < initial_rate / 2:
+                                if rate < initial_rate / 1.8:
                                     self.left_foot_count += 1
                                     self.left_foot_index.append(idx + i)
                                     break
