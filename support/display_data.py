@@ -9,6 +9,7 @@ from PyQt5.QtCore import *
 from main import args
 
 
+
 class DisplayData:
     """
     The class calculates and displays the processed data and measurements
@@ -22,6 +23,13 @@ class DisplayData:
         self.right_foot_index = []
         self.left_foot_index = []
         self.data = data
+        # print(self.data.input_files)
+        # Blur face for anonymity
+        if args["anon"] == 'True':
+            self.data.input_files = bf.anonymise_images(self.data.input_files, [item[:-1] for item in self.data.key_points["Nose"]])
+            # print("data", self.data.input_files)
+
+
         # initial keypoints for distance
         self.keypoint1 = "LBigToe"
         self.keypoint2 = "RBigToe"
@@ -856,6 +864,7 @@ class DisplayData:
                         initial_rate = abs(y1_left - y2_left)
                         try:
                             for i in range(5):
+                                # TODO This causes steps to be missed
                                 if idx in self.detected_frame_list:
                                     break
                                 y1_left = self.fp("LHeel", idx + i)[1]

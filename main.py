@@ -12,6 +12,7 @@ ap.add_argument('-ci', '--cimages', required=False, help='Add coronal image dire
 ap.add_argument('-height', '--height', required=False, type=int, help='Add height of the person in centimetres (cm)')
 ap.add_argument('-fps', '--fps', required=False, type=int, help='FPS to save video output')
 ap.add_argument('-vl', '-video_length', required=False, type=float, help='Add the video length in seconds')
+ap.add_argument('-a', '--anon', required=False, default=False, help='Set anonymous mode to True or False')
 
 args = vars(ap.parse_args())
 

@@ -3,9 +3,54 @@ import cv2
 from datetime import datetime
 import numpy as np
 import glob
+import re
 import os
 import argparse
+from PIL import Image, ImageFilter
 from main import args
+
+
+def anonymise_images(frames, nose_points):
+    """
+    Add a Gaussian blur to conceal face for privacy reasons
+    :param frame:
+    :param nose:
+    :return:
+    """
+
+
+    padx = 60
+    pady = 40
+    for idx, path in enumerate(frames):
+        frame = Image.open(path)
+        nose_x = nose_points[idx][0]
+        nose_y = nose_points[idx][1]
+        # print(nose_x, nose_y)
+        point1 = nose_x - padx
+        point2 = nose_y - pady
+        if point1 < 0:
+            point1 = 0
+        if point2 < 0:
+            point2 = 0
+
+        nose = (int(point1), int(point2), int(nose_x + padx), int(nose_y + pady))
+        cropped_frame = frame.crop(nose)
+        blurred_frame = cropped_frame.filter(ImageFilter.GaussianBlur(radius=20))
+        # print(nose)
+        # sys.exit()
+        frame.paste(blurred_frame, nose)
+
+        outpath = "{}\\{}.png".format("blurred_images", idx+1)
+        print(outpath)
+        frame.save(outpath)
+    input_files = []
+    for filename in glob.glob("{}\\*.png".format("blurred_images")):
+        input_files.append(filename)
+    # print(input_files)
+    # Stupid python input_files.sort(key=lambda x: int(float(os.path.basename(x).split('.')[0][1:])))
+    input_files.sort(key=lambda f: int(re.sub('\D', '', f)))
+    return input_files
+
 
 def save_frame(frame):
     """
