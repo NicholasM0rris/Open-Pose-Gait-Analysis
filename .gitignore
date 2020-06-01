@@ -30,3 +30,5 @@ input_data/
 testvideo.py
 support/__pycache__/
 __pycache__/
+testarg.py
+blurred_images/
