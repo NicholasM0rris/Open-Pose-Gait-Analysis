@@ -6,15 +6,6 @@
  You can now just run main.py, which will run
  the cleaned up support files.
 
-
-
-Note: Recent commit adding cadence may still require an extra directory. Comment out line 
-339:
-
-```self.duration, self.frame_count, self.fps = get_video_length(self.video_path)```
-
-and line 347 to avoid getting an error from missing file (Original video where fps, duration, and frame_count is determined)
-
 ```self.get_cadence()```
 ### Data:
 Example data processed with Open Pose can be found here:
@@ -70,6 +61,8 @@ until this is complete.
  Additionally:
  <br>
  `-fps` specifies output video fps (1 fps default)
+ <br>
+ `-a True` or `--anon True` adds a blur over patient's face for anonymity (Will increase processing time) 
  
  An example:
  <br>
