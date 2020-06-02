@@ -6,7 +6,6 @@
  You can now just run main.py, which will run
  the cleaned up support files.
 
-```self.get_cadence()```
 ### Data:
 Example data processed with Open Pose can be found here:
 
