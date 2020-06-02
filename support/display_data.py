@@ -26,8 +26,19 @@ class DisplayData:
         # print(self.data.input_files)
         # Blur face for anonymity
         if args["anon"] == 'True':
-            self.data.input_files = bf.anonymise_images(self.data.input_files, [item[:-1] for item in self.data.key_points["Nose"]])
+            if self.data.check_keypoint_visibility("REar"):
+                self.data.input_files = bf.anonymise_images(self.data.input_files, [item[:-1] for item in self.data.key_points["REar"]])
+            elif self.data.check_keypoint_visibility("LEar"):
+                self.data.input_files = bf.anonymise_images(self.data.input_files, [item[:-1] for item in self.data.key_points["LEar"]])
+            elif self.data.check_keypoint_visibility("Nose"):
+                self.data.input_files = bf.anonymise_images(self.data.input_files, [item[:-1] for item in self.data.key_points["Nose"]])
+            else:
+                print("BAD DATA! Failure attempting to blur faces!")
+
             # print("data", self.data.input_files)
+        if args["anonc"] == 'True':
+            self.data.input_files = bf.anonymise_coronal_images(self.data.input_files,
+                                                        [item[:-1] for item in self.data.key_points["Nose"]])
 
 
         # initial keypoints for distance

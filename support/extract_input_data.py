@@ -111,6 +111,18 @@ class ExtractData:
         # print(len(self.input_files), len(self.data_files))
         # sys.exit()
 
+    def check_keypoint_visibility(self, key):
+        valid_points = 0
+        for data_point in self.key_points[key]:
+            if data_point[0] != 0 and data_point[1] !=0:
+                valid_points += 1
+        if valid_points < len(self.key_points[key])/1.3:
+            print("{} has insufficient valid points".format(key))
+            return False
+        else:
+            return True
+
+
     def print_keypoints(self, key_point=None):
         """
         Prints keypoint list
