@@ -76,7 +76,6 @@ class GUI(QMainWindow):
     def create_tabs(self):
         """
         Creates two tabs for sagittal and coronal options
-        :return:
         """
 
         self.tab1 = QWidget()
@@ -88,7 +87,6 @@ class GUI(QMainWindow):
     def gif(self):
         """
         Display the walking gif (skeleton currently)
-        :return:
         """
 
         self.movie_label = QLabel()
@@ -102,7 +100,6 @@ class GUI(QMainWindow):
     def gif2(self):
         """
         Display the walking gif for coronal plane (skeleton currently)
-        :return:
         """
 
         self.movie_label2 = QLabel()
@@ -116,7 +113,6 @@ class GUI(QMainWindow):
     def start_Button(self):
         """
         Create a start button and connect it to start functions
-        :return:
         """
 
         self.start_button = QPushButton('Start', self)
@@ -129,7 +125,6 @@ class GUI(QMainWindow):
     def start_Button2(self):
         """
         Create a start button for coronal plane tab and connect it to start functions
-        :return:
         """
         self.start_button2 = QPushButton('Start', self)
         self.start_button2.clicked.connect(self.startbuttonclick2)
@@ -140,7 +135,6 @@ class GUI(QMainWindow):
     def start_button_functions2(self):
         """
         Assign worker threads for processing functions in coronal plane
-        :return:
         """
         self.worker_thread2 = Worker2(self)
         self.worker_thread2.finish_signal2.connect(self.process_complete_messagebox2)
@@ -152,7 +146,6 @@ class GUI(QMainWindow):
     def start_button_functions(self):
         """
         Assign worker threads for processing functions in the sagittal plane
-        :return:
         """
         # Remove any current images in output file
         self.worker_thread = Worker(self)
@@ -164,7 +157,6 @@ class GUI(QMainWindow):
     def no_option_messagebox(self):
         """
         If no options are selected prompt user with a message box
-        :return:
         """
         print("No option selected ! ")
         msg = QMessageBox()
@@ -177,7 +169,6 @@ class GUI(QMainWindow):
     def process_complete_messagebox(self):
         """
         Once processing is complete notify the user
-        :return:
         """
         print("Process complete ! ")
         msg = QMessageBox.question(self, "The operations have successfully finished ! ",
@@ -204,7 +195,6 @@ class GUI(QMainWindow):
     def process_complete_messagebox2(self):
         """
         Notify the user with a messagebox once processing in the coronal plane is complete
-        :return:
         """
         print("Process complete ! ")
         msg = QMessageBox.question(self, "The operations have successfully finished ! ",

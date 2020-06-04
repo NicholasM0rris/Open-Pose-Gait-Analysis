@@ -112,6 +112,11 @@ class ExtractData:
         # sys.exit()
 
     def check_keypoint_visibility(self, key):
+        """
+        Check Open Pose data points for validality
+        :param key: The key point to check (e.g Nose)
+        :return: True if enough valid key points, False if too many missing points
+        """
         valid_points = 0
         for data_point in self.key_points[key]:
             if data_point[0] != 0 and data_point[1] !=0:
@@ -152,8 +157,7 @@ class ExtractData:
     def print_number_data_files(self, df):
         """
         Print number of data files
-        :param df:
-        :return:
+        :param df: Data frame / list
         """
         self.cheese = 1
         print(len(df['people'][0]['pose_keypoints_2d']))
@@ -161,7 +165,6 @@ class ExtractData:
     def get_data_frames(self):
         """
         Extract the list of joint keypoint locations from JSON files stored in the list of paths in data_files
-        :return:
         """
         try:
             # Get sagittal plane
@@ -193,7 +196,7 @@ class ExtractData:
         """
         Extract a video frame
         :param sec: Specify time to extract frame
-        :return:
+        :return: Return video frame
         """
         if args['video']:
             vidcap = cv2.VideoCapture(args['video'])
@@ -211,7 +214,6 @@ class ExtractData:
     def extract_frames(self):
         """
         Extract the open pose image files for sagittal and coronal planes
-        :return:
         """
         for filename in glob.glob("{}\\*.png".format(self.path_to_input)):
             self.input_files.append(filename)
@@ -221,7 +223,6 @@ class ExtractData:
     def interpolate_all_keypoints(self):
         """
         Interpolate between points to remove 0,0 points not found by Open Pose
-        :return:
         """
         # print(self.key_points)
         # Get the key to change points
@@ -321,7 +322,6 @@ class ExtractData:
     def interpolate_all_coronal_keypoints(self):
         """
         Interpolate between points to remove 0,0 points not found by Open Pose
-        :return:
         """
         # print(self.key_points)
         # Get the key to change points

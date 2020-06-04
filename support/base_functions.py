@@ -13,9 +13,9 @@ from main import args
 def anonymise_images(frames, nose_points):
     """
     Add a Gaussian blur to conceal face for privacy reasons
-    :param frame:
-    :param nose:
-    :return:
+    :param frames: The list of frames to process (Sagittal plane)
+    :param nose: The key point to center the blur
+    :return: List of path names for the blurred images
     """
 
 
@@ -55,9 +55,9 @@ def anonymise_images(frames, nose_points):
 def anonymise_coronal_images(frames, nose_points):
     """
     Add a Gaussian blur to conceal face for privacy reasons
-    :param frame:
-    :param nose:
-    :return:
+    :param frames: The list of frames to process
+    :param nose: The key point to center the blur
+    :return: List of path names for the blurred images
     """
 
 
@@ -99,8 +99,7 @@ def anonymise_coronal_images(frames, nose_points):
 def save_frame(frame):
     """
     Save a frame to output_images
-    :param frame:
-    :return:
+    :param frame: Frame to save
     """
     time_stamp = datetime.now()
     filename = "{}.png".format(time_stamp.strftime("%Y-%m-%d_%H-%M-%S-%f"))
@@ -111,8 +110,7 @@ def save_frame(frame):
 def save_frame2(frame):
     """
     Save a frame to output_images
-    :param frame:
-    :return:
+    :param frame: Frame to save
     """
     time_stamp = datetime.now()
     filename = "{}.png".format(time_stamp.strftime("%Y-%m-%d_%H-%M-%S-%f"))
@@ -123,9 +121,9 @@ def save_frame2(frame):
 def add_line_between_points(frame, points):
     """
     Adds a line overlay between two points and puts pixel distance text
-    :param frame:
-    :param points:
-    :return:
+    :param frame: Frame to add line over
+    :param points: Two points to make line between
+    :return: Processed frame with line over
     """
     point1 = list(map(int, points[0]))
     point2 = list(map(int, points[1]))
@@ -158,7 +156,7 @@ def get_distance(point1, point2):
 
     :param point1: list of coordinates
     :param point2:
-    :return:
+    :return: Calculated distance (float)
     """
     print("ptt2", point1, point2)
     dist = np.linalg.norm(np.asarray(point1) - np.asarray(point2))
@@ -168,11 +166,10 @@ def get_distance(point1, point2):
 
 def distance_overlay(display, point1, point2):
     """
-    Creates overlay for distance
-    :param display:
-    :param point1:
-    :param point2:
-    :return:
+    Creates overlay for distance (points and line)
+    :param display: Frame to display over
+    :param point1: First point
+    :param point2: Second point
     """
     # Remove any current images in output file
     files = glob.glob("{}\\*.png".format("output_images"))
@@ -190,7 +187,6 @@ def distance_overlay(display, point1, point2):
 def save_video():
     """
     Saves a video of processed image output to processed_video directory
-    :return:
     """
     images = []
     for filename in glob.glob("{}\\*.png".format("output_images")):
@@ -215,7 +211,6 @@ def save_video():
 def save_video2():
     """
     Saves a video of processed image output to coronal processed_video directory
-    :return:
     """
     images = []
     for filename in glob.glob("{}\\*.png".format("output_coronal_images")):
@@ -239,6 +234,11 @@ def save_video2():
 
 
 def get_mag(pt1):
+    """
+    Return the magnitude of a point
+    :param pt1: A 2D data point
+    :return: float - magnitude of the point
+    """
     return (pt1[0] ** 2 + pt1[1] ** 2) ** 0.5
 
 
@@ -246,7 +246,7 @@ def get_video_length(video_path):
     """
     Takes a video and return its length (s), frame count and fps
     :param video_path: path to video
-    :return: length (seconds), frame count, fps
+    :return: length (seconds/float), frame count (int), fps (int)
     """
     print("Video path", video_path)
     try:

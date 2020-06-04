@@ -132,8 +132,8 @@ class DisplayData:
         f.close()
         self.frame_number = 1
 
-    # What does fp actually stand for? I forgot a long time ago...
-    # fp stands for fast point to quickly retreive a keypoint coordinate
+
+    # fp stands for fetch point to quickly retreive a keypoint coordinate
     def fp(self, keypoint, frame_index):
         """
         e.g fp("RBigToe, 1) will get x,y coord of RBigToe from frame 1
@@ -168,11 +168,10 @@ class DisplayData:
     def add_line_between_points(self, frame, points, thickness, colour=None):
         """
         Adds a line overlay between two points and puts pixel distance text
-        :param colour:
-        :param thickness:
-        :param frame:
-        :param points:
-        :return:
+        :param colour: The colour of the line
+        :param thickness: Thickness of the line
+        :param frame: What frame to add the line over
+        :param points: Two points to add the line between
         """
         if colour == None:
             colour = (0, 255, 0)
@@ -188,7 +187,6 @@ class DisplayData:
     def distance_overlay(self):
         """
         Creates overlay for distance over the image frames
-        :return:
         """
         # Add overlay
         if not self.frame_list:
