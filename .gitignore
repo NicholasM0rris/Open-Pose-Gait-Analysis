@@ -33,3 +33,6 @@ __pycache__/
 testarg.py
 blurred_images/
 testenv.py
+support/calib_results/
+support/left_checkerboard
+support/right_checkerboard
