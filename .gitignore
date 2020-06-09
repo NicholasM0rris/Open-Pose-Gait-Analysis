@@ -36,3 +36,4 @@ testenv.py
 support/calib_results/
 support/left_checkerboard
 support/right_checkerboard
+testread.py
