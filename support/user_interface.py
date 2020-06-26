@@ -590,6 +590,7 @@ class Worker(QThread):
         self.gui = gui
 
     def run(self):
+        # Remove existing files
         files = glob.glob("{}\\*.png".format("output_images"))
         for f in files:
             os.remove(f)

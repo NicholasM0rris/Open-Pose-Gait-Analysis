@@ -38,3 +38,5 @@ support/left_checkerboard
 support/right_checkerboard
 testread.py
 chiken_wings
+support/left_cam_video
+support/right_cam_video

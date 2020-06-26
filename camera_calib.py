@@ -2,43 +2,89 @@ import numpy as np
 import cv2
 import glob
 import sys
-
+import os
 
 class Calibration:
     def __init__(self):
         # Termination criteria
-        self.criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+        self.checkerlength = 25
+        self.criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 50, 0.0001)
         # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
-        self.left_objp = np.zeros((9 * 7, 3), np.float32)
-        self.left_objp[:, :2] = np.mgrid[0:7, 0:9].T.reshape(-1, 2)
-        self.right_objp = np.zeros((9 * 7, 3), np.float32)
-        self.right_objp[:, :2] = np.mgrid[0:7, 0:9].T.reshape(-1, 2)
+        self.checkerboard = (6, 8)
+        self.checkersize_y = 6
+        # MUST CHANGE TO MATCH NUMBER OF INSIDE SQUARES!!
+        # e.g self.left_objp = np.zeros((9 squares * 7 squares, 3), np.float32)
+        self.left_objp = np.zeros((self.checkerboard[0] * self.checkerboard[1], 3), np.float32) # MUST CHANGE TO MATCH NUMBER OF INSIDE SQUARES!!
+        self.left_objp[:, :2] = np.mgrid[0:self.checkerboard[0], 0:self.checkerboard[1]].T.reshape(-1, 2) # MUST CHANGE TO MATCH NUMBER OF INSIDE SQUARES!!
+        self.right_objp = np.zeros((self.checkerboard[0] * self.checkerboard[1], 3), np.float32) # MUST CHANGE TO MATCH NUMBER OF INSIDE SQUARES!!
+        self.right_objp[:, :2] = np.mgrid[0:self.checkerboard[0], 0:self.checkerboard[1]].T.reshape(-1, 2) # MUST CHANGE TO MATCH NUMBER OF INSIDE SQUARES!!
         self.left_objpoints = []  # 3d point in real world space
         self.left_imgpoints = []  # 2d points in image plane.
         self.right_objpoints = []  # 3d point in real world space
         self.right_imgpoints = []  # 2d points in image plane.
+
+        self.left_cam_path = 'support\\left_cam_video\\left_cam_video.mp4'
+        self.right_cam_path = 'support\\right_cam_video\\right_cam_video.mp4'
+
+        self.video_to_frames()
+
         self.left_images = glob.glob('support\\left_checkerboard\\*.jpg')
         self.right_images = glob.glob('support\\right_checkerboard\\*.jpg')
+
         # Distance between the camera (mm)
-        self.base = 1800
+        self.base = 1000
 
         self.r_mtx, self.r_dist, self.r_tvecs, self.r_rvecs = self.right_calibrate()
         self.l_mtx, self.l_dist, self.l_tvecs, self.l_rvecs = self.left_calibrate()
-
+        print("Finished calibrating left and right")
+        print("Beginning stereo calibration")
         self.camera_model = self.stereo_calibrate()
+        print("Beginning depth map")
         self.depth_map()
 
         print('Camera model', self.camera_model)
 
-    def left_calibrate(self):
+    def video_to_frames(self):
+        print("Removing existing files in support")
+        files = glob.glob("{}\\*.jpg".format("support\\left_checkerboard"))
+        for f in files:
+            os.remove(f)
+        files = glob.glob("{}\\*.jpg".format("support\\right_checkerboard"))
+        for f in files:
+            os.remove(f)
+        left_cam = cv2.VideoCapture(self.left_cam_path)
+        right_cam = cv2.VideoCapture(self.right_cam_path)
+        multiplier = 5
+        frame_count = 0
+        ret, frame = left_cam.read()
+        ret1, frame1 = right_cam.read()
+        while ret and ret1:
+            ret, frame = left_cam.read()
+            ret1, frame1 = right_cam.read()
 
+            if frame_count % multiplier == 0:
+                print("Saving {}".format("support\\left_checkerboard\\{}.jpg".format(frame_count)))
+                cv2.imwrite("support\\left_checkerboard\\{}.jpg".format(frame_count), frame)
+                print("Saving {}".format("support\\right_checkerboard\\{}.jpg".format(frame_count)))
+                cv2.imwrite("support\\right_checkerboard\\{}.jpg".format(frame_count), frame1)
+
+            frame_count += 1
+        print("Frame acquisition finished")
+
+
+
+    def left_calibrate(self):
+        print("Beginning left_calibrate")
+        image_count = 0
+        no_success = 0
+        no_not_success = 0
         for fname in self.left_images:
             left_img = cv2.imread(fname)
             left_gray = cv2.cvtColor(left_img, cv2.COLOR_BGR2GRAY)
 
             # Find the chess board corners
             # Change 7 and 9 to match checkerboard inside squares
-            left_ret, corners = cv2.findChessboardCorners(left_gray, (7, 9), None)
+            left_ret, corners = cv2.findChessboardCorners(left_gray, self.checkerboard, None)
 
             # If found, add object points, image points (after refining them)
             if left_ret:
@@ -48,16 +94,22 @@ class Calibration:
                 self.left_imgpoints.append(corners2)
 
                 # Draw and display the corners
-                left_img = cv2.drawChessboardCorners(left_img, (7, 9), corners2, left_ret)
-                cv2.imshow('img', left_img)
-                cv2.imwrite('support\\calib_results\\calib_board.png', left_img)
-                cv2.waitKey(500)
+                left_img = cv2.drawChessboardCorners(left_img, self.checkerboard, corners2, left_ret)
+                # cv2.imshow('img', left_img)
+                print("Saving support\\calib_results\\left_calib\\calib_board{}.png".format(image_count))
+                cv2.imwrite('support\\calib_results\\left_calib\\calib_board{}.png'.format(image_count), left_img)
+                image_count += 1
+                # cv2.waitKey(1)
+                print("LeftBigSuccess{}".format(no_success))
+                no_success += 1
             else:
-                print("Not a success")
+                print("Left Not a success{}".format(no_not_success))
+                no_not_success += 1
         left_ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(self.left_objpoints, self.left_imgpoints,
                                                                 left_gray.shape[::-1], None, None)
 
-        img = cv2.imread('support\\left_checkerboard\\image.jpg')
+        # img = cv2.imread('support\\left_checkerboard\\image.jpg')
+        img = cv2.imread(self.left_images[51])
         h, w = img.shape[:2]
         newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w, h), 1, (w, h))
 
@@ -78,13 +130,16 @@ class Calibration:
         return mtx, dist, rvecs, tvecs
 
     def right_calibrate(self):
-
+        print("Beginning right_calibrate")
+        no_success = 0
+        no_not_success = 0
+        image_count = 0
         for fname in self.right_images:
             right_img = cv2.imread(fname)
             right_gray = cv2.cvtColor(right_img, cv2.COLOR_BGR2GRAY)
 
             # Find the chess board corners
-            right_ret, corners = cv2.findChessboardCorners(right_gray, (7, 9), None)
+            right_ret, corners = cv2.findChessboardCorners(right_gray, self.checkerboard, None)
 
             # If found, add object points, image points (after refining them)
             if right_ret:
@@ -94,16 +149,24 @@ class Calibration:
                 self.right_imgpoints.append(corners2)
 
                 # Draw and display the corners
-                right_img = cv2.drawChessboardCorners(right_img, (7, 9), corners2, right_ret)
-                cv2.imshow('img', right_img)
-                cv2.waitKey(500)
+                right_img = cv2.drawChessboardCorners(right_img, self.checkerboard, corners2, right_ret)
+                # cv2.imshow('img', right_img)
+                print("Saving support\\calib_results\\right_calib\\calib_board{}.png".format(image_count))
+                cv2.imwrite('support\\calib_results\\right_calib\\calib_board{}.png'.format(image_count), right_img)
+                image_count += 1
+                # cv2.waitKey(1)
+                print("BigSuccess{}".format(no_success))
+                no_success += 1
             else:
-                print("Not a success")
+                print("Not a success{}".format(no_not_success))
+                no_not_success += 1
         right_ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(self.right_objpoints, self.right_imgpoints,
                                                                  right_gray.shape[::-1], None, None)
+        print("Right calibrate stage 2 commencing")
         self.dimensions = right_gray.shape[::-1]
-
-        img = cv2.imread('support\\right_checkerboard\\image.jpg')
+        # TODO fix this
+        # img = cv2.imread('support\\right_checkerboard\\image.jpg')
+        img = cv2.imread(self.right_images[51])
         h, w = img.shape[:2]
         newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w, h), 1, (w, h))
 
@@ -111,9 +174,11 @@ class Calibration:
         # crop the image
         x, y, w, h = roi
         dst = dst[y:y + h, x:x + w]
-        cv2.imwrite('support\\calib_results\\calibresult.png', dst)
+        print('Saving support\\calib_results\\calibresult_right.png')
+        cv2.imwrite('support\\calib_results\\calibresult_right.png', dst)
 
         total_error = 0
+        print("Finding error")
         for i in range(len(self.right_objpoints)):
             imgpoints2, _ = cv2.projectPoints(self.right_objpoints[i], rvecs[i], tvecs[i], mtx, dist)
             error = cv2.norm(self.right_imgpoints[i], imgpoints2, cv2.NORM_L2) / len(imgpoints2)
@@ -124,6 +189,7 @@ class Calibration:
         return mtx, dist, rvecs, tvecs
 
     def stereo_calibrate(self):
+        print("Stereo_calibrate")
         stereocalib_criteria = (cv2.TERM_CRITERIA_MAX_ITER +
                                 cv2.TERM_CRITERIA_EPS, 100, 1e-5)
         ret, l_mtx, l_dist, r_mtx, r_dist, R, T, E, F = cv2.stereoCalibrate(
@@ -162,6 +228,7 @@ class Calibration:
         return camera_model
 
     def depth_map(self):
+        print("Creating depth map")
         """
         Create a depth map of the stereo cameras
 
@@ -199,7 +266,7 @@ class Calibration:
 
         left_frame = cv2.imread("support\\left_checkerboard\\image.jpg")
         cv2.imshow("left", left_frame)
-        cv2.waitKey(1000)
+        # cv2.waitKey(1)
         right_frame = cv2.imread("support\\right_checkerboard\\image.jpg")
         fixedLeft = cv2.remap(left_frame, leftMapX, leftMapY, cv2.INTER_LINEAR)
         fixedRight = cv2.remap(right_frame, rightMapX, rightMapY, cv2.INTER_LINEAR)
@@ -223,7 +290,7 @@ class Calibration:
         np.savetxt('support\\calib_results\\depth.txt', depth, fmt='%d')
         cv2.imshow('depth', depth / DEPTH_VISUALIZATION_SCALE)
         cv2.imwrite("support\\calib_results\\depth.png", depth)
-        cv2.waitKey(1000)
+        # cv2.waitKey(1)
         cv2.destroyAllWindows()
 
     def print_calibration(self):
@@ -235,6 +302,7 @@ class Calibration:
 
 
 def main(argv=None):
+    print("Operation... Start !")
     calibrate = Calibration()
     # calibrate.print_calibration()
 
