@@ -172,23 +172,31 @@ class ExtractData:
                 temp = []
                 temp_df = json.load(open(files))
                 for key in key_points.keys():
+                    print("key", key)
+                    print(temp_df['people'][0]['pose_keypoints_2d'][key_points[key]])
                     self.key_points[key].append(
                         temp_df['people'][0]['pose_keypoints_2d'][key_points[key] * 3:key_points[key] * 3 + 3])
 
         # Except index error due to empty directory
-        except IndexError:
-            print("Error ! sagittal input folders may be empty !")
-            sys.exit(1)
+        except Exception as e:
+            # TODO investigate this
+            print(self.data_files)
+            pass
+
+            # print("Error ! sagittal input folders may be empty !")
+            # sys.exit(1)
         try:
             # Get coronal plane
             for files in self.coronal_data_files:
                 temp = []
                 temp_df = json.load(open(files))
                 for key in key_points.keys():
+
                     self.coronal_key_points[key].append(
                         temp_df['people'][0]['pose_keypoints_2d'][key_points[key] * 3:key_points[key] * 3 + 3])
         # Empty directories
         except IndexError:
+
             print("Error ! Coronal folders may be empty !")
             sys.exit(1)
 

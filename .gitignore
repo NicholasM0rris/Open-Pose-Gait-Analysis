@@ -41,3 +41,9 @@ chiken_wings
 support/left_cam_video
 support/right_cam_video
 calib_test.py
+cam2_output
+cam1_output
+cam1_output_images
+cam2_output_images
+cam2_output_video
+cam1_output_video

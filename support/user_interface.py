@@ -595,8 +595,10 @@ class Worker(QThread):
         for f in files:
             os.remove(f)
         start = 0
+
         if self.gui.distance_checkbox == Qt.Checked:
             start = 1
+            # self.gui.display.horizontal_foot_angle_overlay()
             self.gui.display.distance_overlay()
 
         if self.gui.angle_checkbox == Qt.Checked:
@@ -625,7 +627,7 @@ class Worker(QThread):
 
 
         else:
-            self.gui.display.display_step_number_overlay()
+            # self.gui.display.display_step_number_overlay()
             for frame in self.gui.display.frame_list:
                 bf.save_frame(frame)
             # noinspection PyBroadException

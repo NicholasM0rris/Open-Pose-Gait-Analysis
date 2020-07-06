@@ -19,9 +19,12 @@ def anonymise_images(frames, nose_points):
     """
 
 
-    padx = 60
-    pady = 40
+    padx = 100
+    pady = 80
     for idx, path in enumerate(frames):
+        #print(len(frames))
+        #print(frames)
+
         frame = Image.open(path)
         nose_x = nose_points[idx][0]
         nose_y = nose_points[idx][1]
@@ -42,13 +45,23 @@ def anonymise_images(frames, nose_points):
 
         outpath = "{}\\{}.png".format("blurred_images", idx+1)
         print(outpath)
+        print(idx, "idx")
+        print("path", path)
         frame.save(outpath)
+        if idx == 350:
+            print(frames)
+            print(len(frames))
+
+
     input_files = []
+    print("Finished FOR loop")
     for filename in glob.glob("{}\\*.png".format("blurred_images")):
         input_files.append(filename)
     # print(input_files)
     # Stupid python input_files.sort(key=lambda x: int(float(os.path.basename(x).split('.')[0][1:])))
+    print("Start sorting")
     input_files.sort(key=lambda f: int(re.sub('\D', '', f)))
+    print("Finished blurring")
     return input_files
 
 

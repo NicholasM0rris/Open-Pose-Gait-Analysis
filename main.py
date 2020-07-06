@@ -14,6 +14,7 @@ ap.add_argument('-fps', '--fps', required=False, type=int, help='FPS to save vid
 ap.add_argument('-vl', '-video_length', required=False, type=float, help='Add the video length in seconds')
 ap.add_argument('-a', '--anon', required=False, default=False, help='Set anonymous mode to True or False')
 ap.add_argument('-ac', '--anonc', required=False, default=False, help='CORONAL PLANE: Set anonymous mode to True or False')
+ap.add_argument('-t', '--treadmill', required=False, default=False, help='Treadmill: Set treadmill to True if the person is walking on a treadmill')
 
 args = vars(ap.parse_args())
 

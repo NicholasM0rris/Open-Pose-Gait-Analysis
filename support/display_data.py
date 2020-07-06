@@ -1,6 +1,7 @@
 import cv2
 import matplotlib.pyplot as plt
 from matplotlib.axes._axes import _log as matplotlib_axes_logger
+
 matplotlib_axes_logger.setLevel('ERROR')
 import support.base_functions as bf
 import numpy as np
@@ -8,6 +9,7 @@ from datetime import datetime
 from PyQt5.QtCore import *
 from main import args
 
+import sys
 
 
 class DisplayData:
@@ -27,19 +29,22 @@ class DisplayData:
         # Blur face for anonymity
         if args["anon"] == 'True':
             if self.data.check_keypoint_visibility("REar"):
-                self.data.input_files = bf.anonymise_images(self.data.input_files, [item[:-1] for item in self.data.key_points["REar"]])
+                print("ear", len(self.data.input_files))
+                self.data.input_files = bf.anonymise_images(self.data.input_files,
+                                                            [item[:-1] for item in self.data.key_points["REar"]])
             elif self.data.check_keypoint_visibility("LEar"):
-                self.data.input_files = bf.anonymise_images(self.data.input_files, [item[:-1] for item in self.data.key_points["LEar"]])
+                self.data.input_files = bf.anonymise_images(self.data.input_files,
+                                                            [item[:-1] for item in self.data.key_points["LEar"]])
             elif self.data.check_keypoint_visibility("Nose"):
-                self.data.input_files = bf.anonymise_images(self.data.input_files, [item[:-1] for item in self.data.key_points["Nose"]])
+                self.data.input_files = bf.anonymise_images(self.data.input_files,
+                                                            [item[:-1] for item in self.data.key_points["Nose"]])
             else:
                 print("BAD DATA! Failure attempting to blur faces!")
 
             # print("data", self.data.input_files)
         if args["anonc"] == 'True':
             self.data.input_files = bf.anonymise_coronal_images(self.data.input_files,
-                                                        [item[:-1] for item in self.data.key_points["Nose"]])
-
+                                                                [item[:-1] for item in self.data.key_points["Nose"]])
 
         # initial keypoints for distance
         self.keypoint1 = "LBigToe"
@@ -60,6 +65,11 @@ class DisplayData:
         self.num_right_knee_angles = []
         self.left_knee_angles = []
         self.num_left_knee_angles = []
+        # Define angles made at heel and toe
+        self.right_ankle_angles = []
+        self.num_right_ankle_angles = []
+        self.left_ankle_angles = []
+        self.num_left_ankle_angles = []
         # Define step width between heels
         self.step_width = []
         self.num_step_width = []
@@ -80,8 +90,17 @@ class DisplayData:
         self.velocity_list = []
         self.stride_length_list = []
         self.cadence = []
+        self.left_index_list = []
+        self.right_index_list = []
         self.correct_leg_swap()
-        self.get_number_steps()
+        if args['treadmill'] == 'True':
+            self.get_number_steps()
+            self.display_step_number_overlay()
+        else:
+            self.horizontal_foot_angle_overlay(True)
+            self.display_normal_step_number_overlay()
+        # self.horizontal_foot_angle_overlay(True)
+        # sys.exit()
         # In testing stage
         try:
             self.get_velocity()
@@ -131,7 +150,6 @@ class DisplayData:
             f.write("%s\n" % something)
         f.close()
         self.frame_number = 1
-
 
     # fp stands for fetch point to quickly retreive a keypoint coordinate
     def fp(self, keypoint, frame_index):
@@ -242,7 +260,7 @@ class DisplayData:
         self.gui.max_dist_label.setText("Max dist: {}".format(max_dist))
         self.gui.min_dist_label.setText("Min dist: {}".format(min_dist))
 
-    def get_angle(self, p3, p2, p1):
+    def get_angle(self, p3, p2, p1, print_option=None):
         """
         a = (p1.x - p2.x, p1.y - p2.y)
         b = (p1.x - p3.x, p1.y - p3.y)
@@ -258,7 +276,8 @@ class DisplayData:
         numerator = np.dot(a, b)
         denominator = (bf.get_mag(a) * bf.get_mag(b))
         angle = np.arccos(numerator / denominator)
-        print("ANGLE", angle)
+        if print_option:
+            print("ANGLE", angle)
 
         # Convert to degrees
         angle = np.degrees(angle)
@@ -754,7 +773,7 @@ class DisplayData:
             try:
                 ''' If a high rate change is detected swap the legs'''
                 # print('directions',directions)
-                if (rate_change[idx] > average_rate_change * 3):# and (directions[idx-1] != directions[idx]):
+                if (rate_change[idx] > average_rate_change * 3):  # and (directions[idx-1] != directions[idx]):
                     self.detected_frame_list.append(idx)
                     print("Possible leg swap at frame {}".format(idx))
 
@@ -776,9 +795,11 @@ class DisplayData:
                     # LKnee, RKnee = RKnee, LKnee
                     self.data.key_points["LAnkle"][idx][:-1], self.data.key_points["RAnkle"][idx][:-1] = RAnkle, LAnkle
                     # LAnkle, RAnkle = RAnkle, LAnkle
-                    self.data.key_points["LBigToe"][idx][:-1], self.data.key_points["RBigToe"][idx][:-1] = RBigToe, LBigToe
+                    self.data.key_points["LBigToe"][idx][:-1], self.data.key_points["RBigToe"][idx][
+                                                               :-1] = RBigToe, LBigToe
                     # LBigToe, RBigToe = RBigToe, LBigToe
-                    self.data.key_points["LSmallToe"][idx][:-1], self.data.key_points["RSmallToe"][idx][:-1] = RSmallToe, LSmallToe
+                    self.data.key_points["LSmallToe"][idx][:-1], self.data.key_points["RSmallToe"][idx][
+                                                                 :-1] = RSmallToe, LSmallToe
                     # LSmallToe, RSmallToe = RSmallToe, LSmallToe
                     self.data.key_points["LHeel"][idx][:-1], self.data.key_points["RHeel"][idx][:-1] = RHeel, LHeel
                     # LHeel, RHeel = RHeel, LHeel
@@ -952,6 +973,406 @@ class DisplayData:
 
             self.frame_list = temp_list
 
+    def horizontal_foot_angle_overlay(self, display):
+        """
+        Creates overlay for angle wrt to horizontal line at heel
+        :param display: If display is added, create an overlay on the video, otherwise just find the angle
+        :return:
+        """
+        # Add overlay
+        if not self.frame_list:
+            # initial right toe and heel coordinates
+            right_toe_position = self.fp("RBigToe", 0)
+            right_heel_position = self.fp("RHeel", 0)
+            # initial left toe and heel coordinates
+            left_toe_position = self.fp("LBigToe", 0)
+            left_heel_position = self.fp("LHeel", 0)
+            index_list = set()
+            left_index_list = set()
+            initial_phase = 0
+            left_phase = 0
+
+            # Initial phase = 1 when toe is above heel, 0 when below
+            if right_toe_position < right_heel_position:
+                initial_phase = 1
+            else:
+                initial_phase = 0
+
+            if left_toe_position < left_heel_position:
+                left_phase = 1
+            else:
+                left_phase = 0
+
+            for idx, path in enumerate(self.data.input_files):
+
+                angle = self.get_angle(self.fp("RBigToe", idx), self.fp("RHeel", idx),
+                                       (self.fp("RHeel", idx)[0] + 200, self.fp("RHeel", idx)[1]))
+                left_angle = self.get_angle(self.fp("LBigToe", idx), self.fp("LHeel", idx),
+                                            (self.fp("LHeel", idx)[0] + 200, self.fp("LHeel", idx)[1]))
+
+                self.right_ankle_angles.append("Frame {} - Angle: {}".format(self.frame_number, angle))
+                self.num_right_ankle_angles.append(angle)
+
+                self.left_ankle_angles.append("Frame {} - Angle: {}".format(self.frame_number, left_angle))
+                self.num_left_ankle_angles.append(left_angle)
+
+                right_toe_position = self.fp("RBigToe", idx)
+                right_heel_position = self.fp("RHeel", idx)
+                if right_toe_position[1] < right_heel_position[1] and angle > 25:
+                    initial_phase = 1
+                else:
+                    initial_phase = 0
+                left_toe_position = self.fp("LBigToe", idx)
+                left_heel_position = self.fp("LHeel", idx)
+                if left_toe_position[1] < left_heel_position[1] and left_angle > 25:
+                    left_phase = 1
+                else:
+                    left_phase = 0
+
+                # Check if the toe is above the heel, and the angle is greater than 25 degrees
+                # print("Angle {}\n Phase {}".format(angle, initial_phase))
+                # if right_toe_position[1] < right_heel_position[1]:
+
+                #   print("Toe above at idx {}".format(idx))
+                if right_toe_position[1] < right_heel_position[1] and angle > 25:
+                    # The trajectory of incoming step placement detected -
+                    error_count = 0
+                    for i in range(1, 6):
+                        # Check if the toe is above  in next five frames
+                        try:
+                            new_right_toe_position = self.fp("RBigToe", idx + i)
+                            new_right_heel_position = self.fp("RHeel", idx + i)
+
+                            if new_right_heel_position[1] < new_right_toe_position[1]:
+                                error_count += 1
+                            if new_right_toe_position[0] - self.fp("RBigToe", idx + i - 1)[0] > 5 * (
+                                    self.fp("RBigToe", idx + i - 1)[0] - self.fp("RBigToe", idx + i - 2)[0]):
+                                error_count += 1
+                            if error_count >= 2:
+                                # print("Error break at idx {}".format(idx + i))
+                                initial_phase = 0
+                                break
+                            angle = self.get_angle(self.fp("RBigToe", idx + i), self.fp("RHeel", idx + i),
+                                                   (self.fp("RHeel", idx + i)[0] + 200, self.fp("RHeel", idx + i)[1]))
+                            print("New angle", angle)
+                            if angle <= 20 and new_right_heel_position[1] > new_right_toe_position[1] and (
+                                    new_right_toe_position[0] - self.fp("RBigToe", idx + i - 1)[0]) < (
+                                    5 * (self.fp("RBigToe", idx + i - 1)[0] - self.fp("RBigToe", idx + i - 2)[0])):
+                                # print("heel {}, toe {}".format(new_right_heel_position, new_right_toe_position))
+                                # print(idx + i)
+                                # print("\nPOSSIBLE STEP AT", idx + i, "\n")
+                                index_list.add(idx + i)
+                                initial_phase = 0
+                                break
+                        except IndexError:
+                            pass
+                # print("right indexlist", index_list)
+
+                if left_toe_position[1] < left_heel_position[1] and angle > 25:
+                    # The trajectory of incoming step placement detected -
+                    error_count = 0
+                    for i in range(1, 6):
+                        # Check if the toe is above  in next five frames
+                        try:
+                            new_left_toe_position = self.fp("LBigToe", idx + i)
+                            new_left_heel_position = self.fp("LHeel", idx + i)
+
+                            if new_left_heel_position[1] < new_left_toe_position[1]:
+                                error_count += 1
+                            if new_left_toe_position[0] - self.fp("LBigToe", idx + i - 1)[0] > 5 * (
+                                    self.fp("LBigToe", idx + i - 1)[0] - self.fp("LBigToe", idx + i - 2)[0]):
+                                error_count += 1
+                            if error_count >= 2:
+                                # print("Error break at idx {}".format(idx + i))
+                                left_phase = 0
+                                break
+                            angle = self.get_angle(self.fp("LBigToe", idx + i), self.fp("LHeel", idx + i),
+                                                   (self.fp("LHeel", idx + i)[0] + 200, self.fp("LHeel", idx + i)[1]))
+                            print("New angle", angle)
+                            if angle <= 20 and new_left_heel_position[1] > new_left_toe_position[1] and (
+                                    new_left_toe_position[0] - self.fp("LBigToe", idx + i - 1)[0]) < (
+                                    5 * (self.fp("LBigToe", idx + i - 1)[0] - self.fp("LBigToe", idx + i - 2)[0])):
+                                # print("heel {}, toe {}".format(new_right_heel_position, new_right_toe_position))
+                                # print(idx + i)
+                                # print("\nPOSSIBLE STEP AT", idx + i, "\n")
+                                left_index_list.add(idx + i)
+                                left_phase = 0
+                                break
+                        except IndexError:
+                            pass
+                # print("left indexlist", left_index_list)
+
+                if display:
+                    frame = cv2.imread(path)
+                    frame = self.add_points_to_image(frame,
+                                                     [self.fp("RHeel", idx), self.fp("RBigToe", idx),
+                                                      [self.fp("RHeel", idx)[0] + 200, self.fp("RHeel", idx)[1]]])
+                    frame = self.add_line_between_points(frame,
+                                                         [self.fp("RHeel", idx),
+                                                          [self.fp("RHeel", idx)[0] + 200, self.fp("RHeel", idx)[1]]],
+                                                         16)
+                    frame = self.add_line_between_points(frame,
+                                                         [self.fp("RHeel", idx), self.fp("RBigToe", idx)], 16)
+                    org = tuple([int(self.fp("RBigToe", idx)[0] + 200), int(self.fp("RBigToe", idx)[1])])
+                    font = cv2.FONT_HERSHEY_SIMPLEX
+                    fontscale = 1
+                    color = (0, 0, 255)
+                    thickness = 2
+                    frame = cv2.putText(frame, 'Angle: {}'.format(angle), org, font,
+                                        fontscale, color, thickness, cv2.LINE_AA)
+                    self.frame_number += 1
+                    # save_frame(frame)
+                    self.frame_list.append(frame)
+
+        else:
+            """ If frame list is not empty, use the existing frames """
+            right_toe_position = self.fp("RBigToe", 0)
+            right_heel_position = self.fp("RHeel", 0)
+            # initial left toe and heel coordinates
+            left_toe_position = self.fp("LBigToe", 0)
+            left_heel_position = self.fp("LHeel", 0)
+            index_list = []
+            left_index_list = []
+            temp_list = []
+            initial_phase = 0
+            left_phase = 0
+
+            # Initial phase = 1 when toe is above heel, 0 when below
+            if right_toe_position < right_heel_position:
+                initial_phase = 1
+            else:
+                initial_phase = 0
+
+            if left_toe_position < left_heel_position:
+                left_phase = 1
+            else:
+                left_phase = 0
+
+            for idx, path in enumerate(self.frame_list):
+
+                angle = self.get_angle(self.fp("RBigToe", idx), self.fp("RHeel", idx),
+                                       (self.fp("RHeel", idx)[0] + 200, self.fp("RHeel", idx)[1]))
+                left_angle = self.get_angle(self.fp("LBigToe", idx), self.fp("LHeel", idx),
+                                            (self.fp("LHeel", idx)[0] + 200, self.fp("LHeel", idx)[1]))
+
+                self.right_ankle_angles.append("Frame {} - Angle: {}".format(self.frame_number, angle))
+                self.num_right_ankle_angles.append(angle)
+
+                self.left_ankle_angles.append("Frame {} - Angle: {}".format(self.frame_number, left_angle))
+                self.num_left_ankle_angles.append(left_angle)
+
+                right_toe_position = self.fp("RBigToe", idx)
+                right_heel_position = self.fp("RHeel", idx)
+                if right_toe_position[1] < right_heel_position[1] and angle > 25:
+                    initial_phase = 1
+                else:
+                    initial_phase = 0
+                left_toe_position = self.fp("LBigToe", idx)
+                left_heel_position = self.fp("LHeel", idx)
+                if left_toe_position[1] < left_heel_position[1] and left_angle > 25:
+                    left_phase = 1
+                else:
+                    left_phase = 0
+
+                # Check if the toe is above the heel, and the angle is greater than 25 degrees
+                # print("Angle {}\n Phase {}".format(angle, initial_phase))
+                # if right_toe_position[1] < right_heel_position[1]:
+
+                #   print("Toe above at idx {}".format(idx))
+                if right_toe_position[1] < right_heel_position[1] and angle > 25:
+                    # The trajectory of incoming step placement detected -
+                    error_count = 0
+                    for i in range(1, 6):
+                        # Check if the toe is above  in next five frames
+                        try:
+                            new_right_toe_position = self.fp("RBigToe", idx + i)
+                            new_right_heel_position = self.fp("RHeel", idx + i)
+
+                            if new_right_heel_position[1] < new_right_toe_position[1]:
+                                error_count += 1
+                            if new_right_toe_position[0] - self.fp("RBigToe", idx + i - 1)[0] > 5 * (
+                                    self.fp("RBigToe", idx + i - 1)[0] - self.fp("RBigToe", idx + i - 2)[0]):
+                                error_count += 1
+                            if error_count >= 2:
+                                # print("Error break at idx {}".format(idx + i))
+                                initial_phase = 0
+                                break
+                            angle = self.get_angle(self.fp("RBigToe", idx + i), self.fp("RHeel", idx + i),
+                                                   (self.fp("RHeel", idx + i)[0] + 200, self.fp("RHeel", idx + i)[1]))
+                            print("New angle", angle)
+                            if angle <= 20 and new_right_heel_position[1] > new_right_toe_position[1] and (
+                                    new_right_toe_position[0] - self.fp("RBigToe", idx + i - 1)[0]) < (
+                                    5 * (self.fp("RBigToe", idx + i - 1)[0] - self.fp("RBigToe", idx + i - 2)[0])):
+                                # print("heel {}, toe {}".format(new_right_heel_position, new_right_toe_position))
+                                # print(idx + i)
+                                # print("\nPOSSIBLE STEP AT", idx + i, "\n")
+                                index_list.add(idx + i)
+                                initial_phase = 0
+                                break
+                        except IndexError:
+                            pass
+                print("right indexlist", index_list)
+
+                if left_toe_position[1] < left_heel_position[1] and angle > 25:
+                    # The trajectory of incoming step placement detected -
+                    error_count = 0
+                    for i in range(1, 6):
+                        # Check if the toe is above  in next five frames
+                        try:
+                            new_left_toe_position = self.fp("LBigToe", idx + i)
+                            new_left_heel_position = self.fp("LHeel", idx + i)
+
+                            if new_left_heel_position[1] < new_left_toe_position[1]:
+                                error_count += 1
+                            if new_left_toe_position[0] - self.fp("LBigToe", idx + i - 1)[0] > 5 * (
+                                    self.fp("LBigToe", idx + i - 1)[0] - self.fp("LBigToe", idx + i - 2)[0]):
+                                error_count += 1
+                            if error_count >= 2:
+                                # print("Error break at idx {}".format(idx + i))
+                                left_phase = 0
+                                break
+                            angle = self.get_angle(self.fp("LBigToe", idx + i), self.fp("LHeel", idx + i),
+                                                   (self.fp("LHeel", idx + i)[0] + 200, self.fp("LHeel", idx + i)[1]))
+                            print("New angle", angle)
+                            if angle <= 20 and new_left_heel_position[1] > new_left_toe_position[1] and (
+                                    new_left_toe_position[0] - self.fp("LBigToe", idx + i - 1)[0]) < (
+                                    5 * (self.fp("LBigToe", idx + i - 1)[0] - self.fp("LBigToe", idx + i - 2)[0])):
+                                # print("heel {}, toe {}".format(new_right_heel_position, new_right_toe_position))
+                                # print(idx + i)
+                                # print("\nPOSSIBLE STEP AT", idx + i, "\n")
+                                left_index_list.add(idx + i)
+                                left_phase = 0
+                                break
+                        except IndexError:
+                            pass
+                print("left indexlist", left_index_list)
+
+
+                if display:
+                    frame = self.add_points_to_image(frame,
+                                                     [self.fp("RHeel", idx), self.fp("RBigToe", idx),
+                                                      (self.fp("RHeel", idx)[0] + 200, self.fp("RHeel", idx)[1])])
+                    frame = self.add_line_between_points(frame,
+                                                         [self.fp("RHeel", idx), self.fp("RHeel", idx)[0] + 200,
+                                                          self.fp("RHeel", idx)[1]], 16)
+                    frame = self.add_line_between_points(frame,
+                                                         [self.fp("RHeel", idx), self.fp("RBigToe", idx)], 16)
+                    org = tuple([int(self.fp("RBigToe", idx)[0] + 200), int(self.fp("RBigToe", idx)[1])])
+                    font = cv2.FONT_HERSHEY_SIMPLEX
+                    fontscale = 1
+                    color = (0, 0, 255)
+                    thickness = 2
+
+                    frame = cv2.putText(frame, 'Angle: {}'.format(angle), org, font,
+                                        fontscale, color, thickness, cv2.LINE_AA)
+                    self.frame_number += 1
+                    temp_list.append(frame)
+            if display:
+                self.frame_list = temp_list
+
+        left_index_list = sorted(list(left_index_list))
+        del_list = []
+        for indx, i in enumerate(left_index_list):
+            try:
+                if i + 30 > left_index_list[indx + 1]:
+                    count = 1
+                    while True:
+                        if i + 30 > left_index_list[indx + count]:
+                            print("Del {}".format(left_index_list[indx + count]))
+                            del_list.append(left_index_list[indx + count])
+                            count += 1
+                        else:
+                            break
+
+            except IndexError:
+                print("LIdx reached")
+                pass
+        print(del_list)
+        for num in del_list:
+            try:
+                left_index_list.remove(num)
+            except ValueError:
+                pass
+
+        index_list = sorted(list(index_list))
+        del_list = []
+        for indx, i in enumerate(index_list):
+            try:
+                if i + 30 > index_list[indx + 1]:
+                    count = 1
+                    while True:
+                        if i + 30 > index_list[indx + count]:
+                            print("Del {}".format(index_list[indx + count]))
+                            del_list.append(index_list[indx + count])
+                            count += 1
+                        else:
+                            break
+
+            except IndexError:
+                print("RIdx reached")
+                pass
+        for num in del_list:
+            try:
+                index_list.remove(num)
+            except ValueError:
+                pass
+        print("Final left index", left_index_list)
+        print("Final right index", index_list)
+
+        self.left_index_list = left_index_list
+        self.right_index_list = index_list
+
+        self.save_text(self.right_ankle_angles, "Right_Horizontal_foot_angle")
+        self.save_text(self.left_ankle_angles, "Left_Horizontal_Foot_Angle")
+
+    def display_normal_step_number_overlay(self):
+
+        """
+        Creates overlay for step number over all frames
+        :return:
+        """
+        org = (100, 100)
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        fontscale = 1
+        color = (0, 0, 255)
+        thickness = 2
+        left_foot_count = 0
+        right_foot_count = 0
+        # Add overlay
+        if not self.frame_list:
+            for idx, path in enumerate(self.data.input_files):
+                if idx in self.left_index_list:
+                    left_foot_count += 1
+                if idx in self.right_index_list:
+                    right_foot_count += 1
+                frame = cv2.imread(path)
+                frame = cv2.putText(frame, 'Number of right steps: {}'.format(right_foot_count), org, font,
+                                    fontscale, color, thickness, cv2.LINE_AA)
+                frame = cv2.putText(frame, 'Number of left steps: {}'.format(left_foot_count), (100, 50), font,
+                                    fontscale, color, thickness, cv2.LINE_AA)
+                frame = cv2.putText(frame, 'Frame count: {}'.format(idx), (100, 150), font,
+                                    fontscale, color, thickness, cv2.LINE_AA)
+                self.frame_number += 1
+                self.frame_list.append(frame)
+        else:
+            temp_list = []
+
+            for idx, frame in enumerate(self.frame_list):
+                if idx in self.left_index_list:
+                    left_foot_count += 1
+                if idx in self.right_index_list:
+                    right_foot_count += 1
+                frame = cv2.putText(frame, 'Number of right steps: {}'.format(right_foot_count), org, font,
+                                    fontscale, color, thickness, cv2.LINE_AA)
+                frame = cv2.putText(frame, 'Number of left steps: {}'.format(left_foot_count), (100, 50), font,
+                                    fontscale, color, thickness, cv2.LINE_AA)
+                frame = cv2.putText(frame, 'Frame count: {}'.format(idx), (100, 150), font,
+                                    fontscale, color, thickness, cv2.LINE_AA)
+                self.frame_number += 1
+                temp_list.append(frame)
+
+            self.frame_list = temp_list
+
     def get_velocity(self):
         """
         Calculate the displacement between each step, and use it to find the velocity
@@ -966,8 +1387,13 @@ class DisplayData:
         area = 10
         colors = (0, 0, 0)
         save_to_file_list = []
-        step_list = self.right_foot_index + self.left_foot_index
-        step_list.sort()
+        if args['treadmill'] == 'True':
+            step_list = self.right_foot_index + self.left_foot_index
+            step_list.sort()
+        else:
+            step_list = self.right_index_list + self.left_index_list
+            step_list.sort()
+
         for x, idx in enumerate(step_list):
             try:
                 displacement = abs(bf.get_distance(self.fp("LBigToe", idx), self.fp("RBigToe", idx)))
@@ -1060,8 +1486,12 @@ class DisplayData:
         """
         colors = (0, 0, 0)
         area = 10
-        step_list = self.right_foot_index + self.left_foot_index
-        step_list.sort()
+        if args['treadmill'] == 'True':
+            step_list = self.right_foot_index + self.left_foot_index
+            step_list.sort()
+        else:
+            step_list = self.right_index_list + self.left_index_list
+            step_list.sort()
         save_to_file_list = []
         print(step_list)
         for idx, count in enumerate(step_list):
