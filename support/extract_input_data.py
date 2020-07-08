@@ -171,17 +171,21 @@ class ExtractData:
             for files in self.data_files:
                 temp = []
                 temp_df = json.load(open(files))
+                # Check case where no person is present
                 for key in key_points.keys():
-                    print("key", key)
-                    print(temp_df['people'][0]['pose_keypoints_2d'][key_points[key]])
-                    self.key_points[key].append(
-                        temp_df['people'][0]['pose_keypoints_2d'][key_points[key] * 3:key_points[key] * 3 + 3])
+                    if temp_df['people']:
+                        print("key", key)
+                        print(temp_df['people'][0]['pose_keypoints_2d'][key_points[key]])
+                        self.key_points[key].append(
+                            temp_df['people'][0]['pose_keypoints_2d'][key_points[key] * 3:key_points[key] * 3 + 3])
+
+                    # No person case handling
+                    else:
+                        self.key_points[key].append([0, 0, 0])
 
         # Except index error due to empty directory
         except Exception as e:
-            # TODO investigate this
-            print(self.data_files)
-            pass
+            raise e
 
             # print("Error ! sagittal input folders may be empty !")
             # sys.exit(1)

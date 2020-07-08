@@ -10,7 +10,7 @@ from PIL import Image, ImageFilter
 from main import args
 
 
-def anonymise_images(frames, nose_points):
+def anonymise_images(frames, nose_points, right_ear_points, left_ear_points):
     """
     Add a Gaussian blur to conceal face for privacy reasons
     :param frames: The list of frames to process (Sagittal plane)
@@ -26,9 +26,22 @@ def anonymise_images(frames, nose_points):
         #print(frames)
 
         frame = Image.open(path)
-        nose_x = nose_points[idx][0]
-        nose_y = nose_points[idx][1]
-        # print(nose_x, nose_y)
+        if nose_points[idx][0] != 0 and nose_points[idx][1] != 0:
+            nose_x = nose_points[idx][0]
+            nose_y = nose_points[idx][1]
+            # print(nose_x, nose_y)
+
+        elif left_ear_points[idx][0] != 0 and left_ear_points[idx][1] != 0:
+            nose_x = left_ear_points[idx][0]
+            nose_y = left_ear_points[idx][1]
+        elif right_ear_points[idx][0] != 0 and right_ear_points[idx][1] != 0:
+            nose_x = right_ear_points[idx][0]
+            nose_y = right_ear_points[idx][1]
+        else:
+            # No point available
+            nose_x = 0
+            nose_y = 0
+
         point1 = nose_x - padx
         point2 = nose_y - pady
         if point1 < 0:
