@@ -174,8 +174,8 @@ class ExtractData:
                 # Check case where no person is present
                 for key in key_points.keys():
                     if temp_df['people']:
-                        print("key", key)
-                        print(temp_df['people'][0]['pose_keypoints_2d'][key_points[key]])
+                        # print("key", key)
+                        # print(temp_df['people'][0]['pose_keypoints_2d'][key_points[key]])
                         self.key_points[key].append(
                             temp_df['people'][0]['pose_keypoints_2d'][key_points[key] * 3:key_points[key] * 3 + 3])
 
@@ -185,6 +185,7 @@ class ExtractData:
 
         # Except index error due to empty directory
         except Exception as e:
+            print("Error: func get_data_frames // - Saggital folder may be empty!")
             raise e
 
             # print("Error ! sagittal input folders may be empty !")
@@ -195,9 +196,13 @@ class ExtractData:
                 temp = []
                 temp_df = json.load(open(files))
                 for key in key_points.keys():
+                    if temp_df['people']:
 
-                    self.coronal_key_points[key].append(
-                        temp_df['people'][0]['pose_keypoints_2d'][key_points[key] * 3:key_points[key] * 3 + 3])
+                        self.coronal_key_points[key].append(
+                            temp_df['people'][0]['pose_keypoints_2d'][key_points[key] * 3:key_points[key] * 3 + 3])
+                    # No person case handling
+                    else:
+                        self.key_points[key].append([0, 0, 0])
         # Empty directories
         except IndexError:
 

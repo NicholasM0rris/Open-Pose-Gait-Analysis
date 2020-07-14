@@ -18,12 +18,13 @@ def anonymise_images(frames, nose_points, right_ear_points, left_ear_points):
     :return: List of path names for the blurred images
     """
 
-
     padx = 100
     pady = 80
+    nose_x = 0
+    nose_y = 0
     for idx, path in enumerate(frames):
-        #print(len(frames))
-        #print(frames)
+        # print(len(frames))
+        # print(frames)
 
         frame = Image.open(path)
         if nose_points[idx][0] != 0 and nose_points[idx][1] != 0:
@@ -38,9 +39,22 @@ def anonymise_images(frames, nose_points, right_ear_points, left_ear_points):
             nose_x = right_ear_points[idx][0]
             nose_y = right_ear_points[idx][1]
         else:
-            # No point available
-            nose_x = 0
-            nose_y = 0
+            # No point available - check previous point
+            try:
+                if nose_points[idx - 1][0] != 0 and nose_points[idx - 1][1] != 0:
+                    nose_x = nose_points[idx - 1][0]
+                    nose_y = nose_points[idx - 1][1]
+                    # print(nose_x, nose_y)
+
+                elif left_ear_points[idx - 1][0] != 0 and left_ear_points[idx - 1][1] != 0:
+                    nose_x = left_ear_points[idx - 1][0]
+                    nose_y = left_ear_points[idx][1]
+                elif right_ear_points[idx - 1][0] != 0 and right_ear_points[idx - 1][1] != 0:
+                    nose_x = right_ear_points[idx - 1][0]
+                    nose_y = right_ear_points[idx - 1][1]
+            except IndexError:
+                nose_x = 0
+                nose_y = 0
 
         point1 = nose_x - padx
         point2 = nose_y - pady
@@ -56,7 +70,7 @@ def anonymise_images(frames, nose_points, right_ear_points, left_ear_points):
         # sys.exit()
         frame.paste(blurred_frame, nose)
 
-        outpath = "{}\\{}.png".format("blurred_images", idx+1)
+        outpath = "{}\\{}.png".format("blurred_images", idx + 1)
         print(outpath)
         print(idx, "idx")
         print("path", path)
@@ -64,7 +78,6 @@ def anonymise_images(frames, nose_points, right_ear_points, left_ear_points):
         if idx == 350:
             print(frames)
             print(len(frames))
-
 
     input_files = []
     print("Finished FOR loop")
@@ -78,7 +91,7 @@ def anonymise_images(frames, nose_points, right_ear_points, left_ear_points):
     return input_files
 
 
-def anonymise_coronal_images(frames, nose_points):
+def anonymise_coronal_images(frames, nose_points, right_ear_points, left_ear_points):
     """
     Add a Gaussian blur to conceal face for privacy reasons
     :param frames: The list of frames to process
@@ -86,17 +99,41 @@ def anonymise_coronal_images(frames, nose_points):
     :return: List of path names for the blurred images
     """
 
-
     padx = 60
     pady = 60
+    nose_x = 0
+    nose_y = 0
     for idx, path in enumerate(frames):
         frame = Image.open(path)
-        old_x, old_y = 0, 0
-        nose_x = nose_points[idx][0]
-        nose_y = nose_points[idx][1]
-        if nose_x == 0 and nose_y == 0:
-            nose_x, nose_y = old_x, old_y
-        # print(nose_x, nose_y)
+        if nose_points[idx][0] != 0 and nose_points[idx][1] != 0:
+            nose_x = nose_points[idx][0]
+            nose_y = nose_points[idx][1]
+            # print(nose_x, nose_y)
+
+        elif left_ear_points[idx][0] != 0 and left_ear_points[idx][1] != 0:
+            nose_x = left_ear_points[idx][0]
+            nose_y = left_ear_points[idx][1]
+        elif right_ear_points[idx][0] != 0 and right_ear_points[idx][1] != 0:
+            nose_x = right_ear_points[idx][0]
+            nose_y = right_ear_points[idx][1]
+        else:
+            # No point available - check previous point
+            try:
+                if nose_points[idx - 1][0] != 0 and nose_points[idx - 1][1] != 0:
+                    nose_x = nose_points[idx - 1][0]
+                    nose_y = nose_points[idx - 1][1]
+                    # print(nose_x, nose_y)
+
+                elif left_ear_points[idx - 1][0] != 0 and left_ear_points[idx - 1][1] != 0:
+                    nose_x = left_ear_points[idx - 1][0]
+                    nose_y = left_ear_points[idx][1]
+                elif right_ear_points[idx - 1][0] != 0 and right_ear_points[idx - 1][1] != 0:
+                    nose_x = right_ear_points[idx - 1][0]
+                    nose_y = right_ear_points[idx - 1][1]
+            except IndexError:
+                nose_x = 0
+                nose_y = 0
+
         point1 = nose_x - padx
         point2 = nose_y - pady
         if point1 < 0:
@@ -111,7 +148,7 @@ def anonymise_coronal_images(frames, nose_points):
         # sys.exit()
         frame.paste(blurred_frame, nose)
 
-        outpath = "{}\\{}.png".format("blurred_coronal_images", idx+1)
+        outpath = "{}\\{}.png".format("blurred_coronal_images", idx + 1)
         print(outpath)
         frame.save(outpath)
     input_files = []
@@ -121,6 +158,7 @@ def anonymise_coronal_images(frames, nose_points):
     # Stupid python input_files.sort(key=lambda x: int(float(os.path.basename(x).split('.')[0][1:])))
     input_files.sort(key=lambda f: int(re.sub('\D', '', f)))
     return input_files
+
 
 def save_frame(frame):
     """
@@ -294,6 +332,17 @@ def get_video_length(video_path):
         print("The video path is wrong.")
         sys.exit()
     return duration, frame_count, fps
+
+
+def get_y_distance(pt1, pt2):
+    """
+    Return the y distance between two points
+    :param pt1: A tuple containing a single x and y coordinate (x, y)
+    :param pt2: A tuple containing a single x and y coordinate (x, y)
+    :return: A float describing the absolute y displacement between the two points
+    """
+    distance = abs(pt1[1] - pt2[1])
+    return distance
 
 
 def main(argv=None):

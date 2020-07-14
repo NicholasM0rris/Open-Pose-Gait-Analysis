@@ -47,7 +47,7 @@ class DisplayData:
             # print("data", self.data.input_files)
         if args["anonc"] == 'True':
             self.data.input_files = bf.anonymise_coronal_images(self.data.input_files,
-                                                                [item[:-1] for item in self.data.key_points["Nose"]])
+                                                                [item[:-1] for item in self.data.key_points["Nose"]],  [item[:-1] for item in self.data.key_points["REar"]],  [item[:-1] for item in self.data.key_points["LEar"]])
 
         # initial keypoints for distance
         self.keypoint1 = "LBigToe"
@@ -96,10 +96,12 @@ class DisplayData:
         self.left_index_list = []
         self.right_index_list = []
         self.correct_leg_swap()
+        # If treadmill, use treadmill functions, otherwise using normal functions
         if args['treadmill'] == 'True':
             self.get_number_steps()
             self.display_step_number_overlay()
         else:
+            # Set horizontal_foot_angle_overlay(x) x to true for overlay and not just calculations
             self.horizontal_foot_angle_overlay(True)
             self.display_normal_step_number_overlay()
         # self.horizontal_foot_angle_overlay(True)
@@ -110,6 +112,37 @@ class DisplayData:
             self.get_cadence()
         except:
             pass
+        self.points = []
+        self.image = cv2.imread('support\\left_checkerboard\\815.jpg')
+
+
+    def select_points(self):
+        clone = self.image.copy()
+        cv2.namedWindow('image')
+        cv2.setMouseCallback("image", self.convert_points)
+        while True:
+            # display the image and wait for a keypress
+            cv2.imshow("image", self.image)
+            key = cv2.waitKey(1) & 0xFF
+            # if the 'r' key is pressed, reset the cropping region
+            if key == ord("r"):
+                self.image = clone.copy()
+                self.points = []
+            # if the 'c' or esc key is pressed, break from the loop
+            elif key in [ord("c"), 27]:
+                break
+        return self.points[:2]
+
+    def convert_points(self, event, x, y, flags, param):
+
+        if event == cv2.EVENT_LBUTTONDOWN:
+            print('Click at', x, y)
+            self.points.append((x, y))
+            cv2.circle(self.image, (x, y), 3, (255, 0, 0), 10)
+
+        if len(self.points) == 2:
+            cv2.line(self.image, self.points[0], self.points[1], (255, 0, 0), 5)
+        cv2.imshow("image", self.image)
 
     def plot_points(self, keypoint):
         """
@@ -1331,7 +1364,7 @@ class DisplayData:
     def display_normal_step_number_overlay(self):
 
         """
-        Creates overlay for step number over all frames
+        Creates overlay for step number over all frames for someone walking without a treadmill
         :return:
         """
         org = (100, 100)

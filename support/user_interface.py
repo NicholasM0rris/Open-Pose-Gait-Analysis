@@ -64,6 +64,11 @@ class GUI(QMainWindow):
         self.metric_labels()
         self.create_average_step_width_label()
 
+        self.height = 0
+        self.pixel_distance = 0
+        self.points = []
+        self.create_height_objects()
+
         self.progress_bar()
         self.progress_bar2()
 
@@ -72,6 +77,42 @@ class GUI(QMainWindow):
         self.tab1.setLayout(self.grid)
         self.tab2.setLayout(self.grid2)
         self.show()
+
+    def pixels_to_mm(self):
+        self.pixel_ratio = self.height / self.pixel_distance
+        print("One pixel is equivalent to {} mms".format(self.pixel_ratio))
+
+    @pyqtSlot()
+    def create_height_objects(self):
+        self.height_layout = QHBoxLayout()
+
+        self.onlyInt = QIntValidator()
+        self.height_line_edit = QLineEdit()
+        self.height_line_edit.setValidator(self.onlyInt)
+
+        self.height_label = QLabel("Select person height: ", self)
+        self.get_height_button = QPushButton('Calibrate Height', self)
+        self.get_height_button.clicked.connect(self.calibrateheightbuttonclick)
+
+
+        self.height_layout.addWidget(self.height_label)
+        self.height_layout.addWidget(self.height_line_edit)
+        self.height_layout.addWidget(self.get_height_button)
+
+        temp_widget = QWidget()
+        temp_widget.setLayout(self.height_layout)
+        self.grid.addWidget(temp_widget, 1, 5)
+
+
+    def calibrateheightbuttonclick(self):
+        try:
+            self.height = int(self.height_line_edit.text())
+            self.calibrate_thread = Worker3(self)
+            self.calibrate_thread.start()
+        except ValueError:
+            print("Enter a height first")
+
+
 
     def create_tabs(self):
         """
@@ -528,7 +569,10 @@ class External(QThread):
             self.count += 1
             # If the frame number is different to processed frame number
             if self.frame != self.gui.display.frame_number:
-                print("Saving to video . . . Progress ({}, {}) / {} frames. {}% complete. {} Frames remaining . . .".format(self.frame, self.gui.display.frame_number, self.gui.frame_count, self.progress, self.gui.frame_count - self.frame))
+                print(
+                    "Saving to video . . . Progress ({}, {}) / {} frames. {}% complete. {} Frames remaining . . .".format(
+                        self.frame, self.gui.display.frame_number, self.gui.frame_count, self.progress,
+                        self.gui.frame_count - self.frame))
                 # Increase the progress bar and set to new frame
                 self.frame = self.gui.display.frame_number
                 self.progress += add
@@ -680,3 +724,26 @@ class Worker2(QThread):
             except Exception:
                 self.quit()
 
+
+class Worker3(QThread):
+    """
+       Worker thread for processing calibrating height
+       """
+    # finish_signal3 = pyqtSignal()
+
+    def __init__(self, gui, parent=None):
+        # super(External2, self).__init__()
+        QThread.__init__(self, parent)
+        self.gui = gui
+
+    def run(self):
+        # Remove any current images in output file
+        points = self.gui.display.select_points()
+        # self.finish_signal3.emit()
+        self.gui.points = points
+        # self.finish_signal3.emit()
+        distance = bf.get_y_distance(points[0], points[1])
+        self.gui.pixel_distance = distance
+        print("Pixel distance:", distance)
+        self.gui.pixels_to_mm()
+        self.quit()

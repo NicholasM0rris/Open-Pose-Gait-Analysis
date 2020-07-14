@@ -35,7 +35,7 @@ class Calibration:
         self.left_cam_path = 'support\\left_cam_video\\left_cam_video.mp4'
         self.right_cam_path = 'support\\right_cam_video\\right_cam_video.mp4'
 
-        # self.video_to_frames()
+        self.video_to_frames()
 
         self.left_images = glob.glob('support\\left_checkerboard\\*.jpg')
         self.right_images = glob.glob('support\\right_checkerboard\\*.jpg')
