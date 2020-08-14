@@ -50,3 +50,4 @@ cam1_output_video
 support/conv2.py
 support/conv3.py
 support/conversion.py
+temp_calibration_image.png

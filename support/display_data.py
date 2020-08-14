@@ -131,6 +131,8 @@ class DisplayData:
             # if the 'c' or esc key is pressed, break from the loop
             elif key in [ord("c"), 27]:
                 break
+        resized_image = cv2.resize(self.image, (543, 353))
+        cv2.imwrite("temp_calibration_image.png", resized_image)
         return self.points[:2]
 
     def convert_points(self, event, x, y, flags, param):

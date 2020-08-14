@@ -21,6 +21,7 @@ args = vars(ap.parse_args())
 import support.user_interface as interface
 import support.extract_input_data as extract_data
 import support.display_data as display_data
+import updated_interface as test_gui
 import sys
 
 
@@ -31,7 +32,10 @@ def main(argv=None):
     # display.distance_overlay()
     app = interface.QApplication([])
     app.aboutToQuit.connect(app.deleteLater)
-    gui = interface.GUI(display)
+    #gui = interface.GUI(display)
+    gui = test_gui.GUI(display)
+
+
     app.exec_()
 
 
