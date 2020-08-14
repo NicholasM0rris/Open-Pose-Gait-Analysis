@@ -9,6 +9,7 @@ from PyQt5.QtGui import *
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
+
 class GUI(QMainWindow):
 
     def __init__(self, display):
@@ -43,6 +44,8 @@ class GUI(QMainWindow):
         self.tabWidget.setObjectName("tabWidget")
 
         self.init_calibrate_tab()
+        self.init_sagittal_tab()
+        self.coronal_tab_init()
 
     def init_calibrate_tab(self):
         self.calibrate_tab = QtWidgets.QWidget()
@@ -130,51 +133,76 @@ class GUI(QMainWindow):
         self.calibrate_selectframe_label_2.setObjectName("calibrate_selectframe_label_2")
         self.tabWidget.addTab(self.calibrate_tab, "")
 
+    def init_sagittal_tab(self):
         self.saggital_tab = QtWidgets.QWidget()
         self.saggital_tab.setObjectName("saggital_tab")
+
+        self.init_s_vid_frame()
+        self.init_s_start_button()
+        self.init_s_video()
+        self.s_init_checkboxes()
+        self.s_init_progressbar()
+        self.s_init_save_output()
+        self.s_init_dropdownbox()
+
+
+
+    def init_s_vid_frame(self):
         self.s_vid_frame = QtWidgets.QFrame(self.saggital_tab)
         self.s_vid_frame.setGeometry(QtCore.QRect(178, 30, 409, 311))
         self.s_vid_frame.setAutoFillBackground(True)
         self.s_vid_frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.s_vid_frame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.s_vid_frame.setObjectName("s_vid_frame")
+
+    def init_s_start_button(self):
         self.s_start_pushButton_3 = QtWidgets.QPushButton(self.saggital_tab)
         self.s_start_pushButton_3.setGeometry(QtCore.QRect(680, 478, 89, 41))
         self.s_start_pushButton_3.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.s_start_pushButton_3.setObjectName("s_start_pushButton_3")
+
+    def init_s_video(self):
         self.s_vid_open_pushButton_6 = QtWidgets.QPushButton(self.saggital_tab)
         self.s_vid_open_pushButton_6.setGeometry(QtCore.QRect(620, 202, 131, 43))
         self.s_vid_open_pushButton_6.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.s_vid_open_pushButton_6.setObjectName("s_vid_open_pushButton_6")
+
         self.s_play_pushButton_7 = QtWidgets.QPushButton(self.saggital_tab)
         self.s_play_pushButton_7.setGeometry(QtCore.QRect(620, 62, 131, 43))
         self.s_play_pushButton_7.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.s_play_pushButton_7.setObjectName("s_play_pushButton_7")
+
         self.s_back_pushButton_8 = QtWidgets.QPushButton(self.saggital_tab)
         self.s_back_pushButton_8.setGeometry(QtCore.QRect(620, 132, 65, 43))
         self.s_back_pushButton_8.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.s_back_pushButton_8.setObjectName("s_back_pushButton_8")
+
         self.s_forward_pushButton_9 = QtWidgets.QPushButton(self.saggital_tab)
         self.s_forward_pushButton_9.setGeometry(QtCore.QRect(684, 132, 67, 43))
         self.s_forward_pushButton_9.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.s_forward_pushButton_9.setObjectName("s_forward_pushButton_9")
+
+
+
+    def s_init_checkboxes(self):
         self.s_angle_checkBox = QtWidgets.QCheckBox(self.saggital_tab)
         self.s_angle_checkBox.setGeometry(QtCore.QRect(8, 60, 149, 35))
         font = QtGui.QFont()
         font.setPointSize(12)
         self.s_angle_checkBox.setFont(font)
         self.s_angle_checkBox.setToolTipDuration(-1)
-        self.s_angle_checkBox.setStatusTip("")
-        self.s_angle_checkBox.setWhatsThis("")
         self.s_angle_checkBox.setObjectName("s_angle_checkBox")
+        self.s_angle_checkBox.stateChanged.connect(self.angle_clickbox_function)
         self.s_lknee_angle_checkBox_2 = QtWidgets.QCheckBox(self.saggital_tab)
         self.s_lknee_angle_checkBox_2.setGeometry(QtCore.QRect(8, 178, 149, 35))
+        self.s_lknee_angle_checkBox_2.stateChanged.connect(self.left_knee_angle_clickbox_function)
         font = QtGui.QFont()
         font.setPointSize(12)
         self.s_lknee_angle_checkBox_2.setFont(font)
         self.s_lknee_angle_checkBox_2.setObjectName("s_lknee_angle_checkBox_2")
         self.s_rknee_angle_checkBox_3 = QtWidgets.QCheckBox(self.saggital_tab)
         self.s_rknee_angle_checkBox_3.setGeometry(QtCore.QRect(8, 138, 149, 35))
+        self.s_rknee_angle_checkBox_3.stateChanged.connect(self.right_knee_angle_clickbox_function)
         font = QtGui.QFont()
         font.setPointSize(12)
         self.s_rknee_angle_checkBox_3.setFont(font)
@@ -185,11 +213,69 @@ class GUI(QMainWindow):
         font.setPointSize(12)
         self.s_legangle_checkBox_4.setFont(font)
         self.s_legangle_checkBox_4.setObjectName("s_legangle_checkBox_4")
+        self.s_legangle_checkBox_4.stateChanged.connect(self.leg_body_angle_clickbox_function)
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.s_distance_checkBox_6 = QtWidgets.QCheckBox(self.saggital_tab)
+        self.s_distance_checkBox_6.setGeometry(QtCore.QRect(12, 356, 93, 35))
+        self.s_distance_checkBox_6.stateChanged.connect(self.distance_clickbox_function)
+        self.s_distance_checkBox_6.setFont(font)
+        self.s_distance_checkBox_6.setObjectName("s_distance_checkBox_6")
+
+    def leg_body_angle_clickbox_function(self, state):
+        if state == Qt.Checked:
+            self.s_legangle_checkBox_4 = Qt.Checked
+            print('leg body Angle Checked')
+        else:
+            self.s_legangle_checkBox_4 = Qt.Unchecked
+            print('leg body Angle Unchecked')
+
+    def distance_clickbox_function(self, state):
+        if state == Qt.Checked:
+            self.s_distance_checkBox_6 = Qt.Checked
+            print('Distance Checked')
+        else:
+            self.s_distance_checkBox_6 = Qt.Unchecked
+            print('Distance Unchecked')
+
+    def right_knee_angle_clickbox_function(self, state):
+        if state == Qt.Checked:
+            self.s_rknee_angle_checkBox_3 = Qt.Checked
+            print('right knee Angle Checked')
+        else:
+            self.s_rknee_angle_checkBox_3 = Qt.Unchecked
+            print('Right knee Angle Unchecked')
+
+    def angle_clickbox_function(self, state):
+        if state == Qt.Checked:
+            self.s_angle_checkBox = Qt.Checked
+            print('Angle Checked')
+        else:
+            self.s_angle_checkBox = Qt.Unchecked
+            print('Angle Unchecked')
+
+    def left_knee_angle_clickbox_function(self, state):
+        if state == Qt.Checked:
+            self.lknee_angle_checkBox_2 = Qt.Checked
+            print('left knee Angle Checked')
+        else:
+            self.lknee_angle_checkBox_2 = Qt.Unchecked
+            print('left knee Angle Unchecked')
+
+
+    def s_init_progressbar(self):
         self.s_progressBar = QtWidgets.QProgressBar(self.saggital_tab)
         self.s_progressBar.setGeometry(QtCore.QRect(14, 480, 661, 37))
-        self.s_progressBar.setCursor(QtGui.QCursor(QtCore.Qt.BusyCursor))
-        self.s_progressBar.setProperty("value", 24)
+        # self.s_progressBar.setCursor(QtGui.QCursor(QtCore.Qt.BusyCursor))
+        self.s_progressBar.setProperty("value", 0)
+        self.s_progressBar.setMaximum(100)
         self.s_progressBar.setObjectName("s_progressBar")
+
+    @pyqtSlot(int)
+    def s_onCountChanged(self, value):
+        self.s_progressBar.setValue(value)
+
+    def s_init_save_output(self):
         self.s_saveoutput_checkBox_5 = QtWidgets.QCheckBox(self.saggital_tab)
         self.s_saveoutput_checkBox_5.setGeometry(QtCore.QRect(476, 398, 149, 35))
         font = QtGui.QFont()
@@ -199,12 +285,55 @@ class GUI(QMainWindow):
         self.s_saveoutput_lineEdit_3 = QtWidgets.QLineEdit(self.saggital_tab)
         self.s_saveoutput_lineEdit_3.setGeometry(QtCore.QRect(476, 436, 233, 29))
         self.s_saveoutput_lineEdit_3.setObjectName("s_saveoutput_lineEdit_3")
+        self.s_saveoutput_pushButton_10 = QtWidgets.QPushButton(self.saggital_tab)
+        self.s_saveoutput_pushButton_10.setGeometry(QtCore.QRect(712, 436, 77, 29))
+        self.s_saveoutput_pushButton_10.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        self.s_saveoutput_pushButton_10.setObjectName("s_saveoutput_pushButton_10")
+
+    def set_dropdown1(self, text):
+        self.display.keypoint1 = text
+        print(self.display.keypoint1)
+
+    def set_dropdown2(self, text):
+        self.display.keypoint2 = text
+        print(self.display.keypoint2)
+
+    def s_init_dropdownbox(self):
         self.s_dp2_comboBox = QtWidgets.QComboBox(self.saggital_tab)
         self.s_dp2_comboBox.setGeometry(QtCore.QRect(246, 428, 217, 39))
         self.s_dp2_comboBox.setObjectName("s_dp2_comboBox")
+        self.s_dp2_comboBox.addItem("RBigToe")
+        self.s_dp2_comboBox.addItem("RWrist")
+        self.s_dp2_comboBox.addItem("RElbow")
+        self.s_dp2_comboBox.addItem("REye")
+        self.s_dp2_comboBox.addItem("RHeel")
+        self.s_dp2_comboBox.addItem("RAnkle")
+        self.s_dp2_comboBox.addItem("RHip")
+        self.s_dp2_comboBox.addItem("REar")
+        self.s_dp2_comboBox.addItem("RShoulder")
+        self.s_dp2_comboBox.addItem("MidHip")
+        self.s_dp2_comboBox.addItem("Nose")
+        self.s_dp2_comboBox.addItem("Neck")
+        self.s_dp2_comboBox.activated[str].connect(self.set_dropdown2)
+
         self.s_dp1_comboBox_3 = QtWidgets.QComboBox(self.saggital_tab)
         self.s_dp1_comboBox_3.setGeometry(QtCore.QRect(14, 428, 217, 39))
         self.s_dp1_comboBox_3.setObjectName("s_dp1_comboBox_3")
+        self.s_dp1_comboBox_3.addItem("LBigToe")
+        self.s_dp1_comboBox_3.addItem("LWrist")
+        self.s_dp1_comboBox_3.addItem("LElbow")
+        self.s_dp1_comboBox_3.addItem("LEye")
+        self.s_dp1_comboBox_3.addItem("LHeel")
+        self.s_dp1_comboBox_3.addItem("LAnkle")
+        self.s_dp1_comboBox_3.addItem("LHip")
+        self.s_dp1_comboBox_3.addItem("LEar")
+        self.s_dp1_comboBox_3.addItem("LShoulder")
+        self.s_dp1_comboBox_3.addItem("MidHip")
+        self.s_dp1_comboBox_3.addItem("Nose")
+        self.s_dp1_comboBox_3.addItem("Neck")
+        self.s_dp1_comboBox_3.activated[str].connect(self.set_dropdown2)
+
+
         self.s_dp1_label_4 = QtWidgets.QLabel(self.saggital_tab)
         self.s_dp1_label_4.setGeometry(QtCore.QRect(16, 400, 165, 16))
         font = QtGui.QFont()
@@ -217,16 +346,9 @@ class GUI(QMainWindow):
         font.setPointSize(12)
         self.s_dp2_label_5.setFont(font)
         self.s_dp2_label_5.setObjectName("s_dp2_label_5")
-        self.s_distance_checkBox_6 = QtWidgets.QCheckBox(self.saggital_tab)
-        self.s_distance_checkBox_6.setGeometry(QtCore.QRect(12, 356, 93, 35))
-        font = QtGui.QFont()
-        font.setPointSize(12)
-        self.s_distance_checkBox_6.setFont(font)
-        self.s_distance_checkBox_6.setObjectName("s_distance_checkBox_6")
-        self.s_saveoutput_pushButton_10 = QtWidgets.QPushButton(self.saggital_tab)
-        self.s_saveoutput_pushButton_10.setGeometry(QtCore.QRect(712, 436, 77, 29))
-        self.s_saveoutput_pushButton_10.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-        self.s_saveoutput_pushButton_10.setObjectName("s_saveoutput_pushButton_10")
+
+
+
         self.s_measurements_label_6 = QtWidgets.QLabel(self.saggital_tab)
         self.s_measurements_label_6.setGeometry(QtCore.QRect(4, 32, 169, 16))
         font = QtGui.QFont()
@@ -249,6 +371,7 @@ class GUI(QMainWindow):
         self.s_playback_label_7.setObjectName("s_playback_label_7")
         self.tabWidget.addTab(self.saggital_tab, "")
 
+    def coronal_tab_init(self):
         self.coronal_tab = QtWidgets.QWidget()
         self.coronal_tab.setObjectName("coronal_tab")
         self.pushButton_11 = QtWidgets.QPushButton(self.coronal_tab)
@@ -505,7 +628,53 @@ class Worker3(QThread):
         self.quit()
 
 
+TIME_LIMIT = 2400000000000000
+class External(QThread):
+    """
+    run the progress bar in an external thread class
+    """
+    mySignal = pyqtSignal(int)
 
+    def __init__(self, gui):
+        super(External, self).__init__()
+        self.gui = gui
+        # Set number operations to one to avoid divide by 0 error
+        if self.gui.num_operations == 0:
+            num_operations = 1
+        else:
+            num_operations = self.gui.num_operations
+        # Get number of files to be operated on
+        self.num_files = len(self.gui.display.data.data_files) * num_operations
+        self.progress = 0
+        self.frame = 1
+        self.count = 0
+
+    def run(self):
+        try:
+            # Get progress to add for each number of file
+            add = 100 / self.num_files
+        except ZeroDivisionError:
+            print("ZeroDivisionError")
+            sys.exit()
+        print("ADD", add)
+        # While not timed out
+        while self.count < TIME_LIMIT:
+            # Add count
+            self.count += 1
+            # If the frame number is different to processed frame number
+            if self.frame != self.gui.display.frame_number:
+                print(
+                    "Saving to video . . . Progress ({}, {}) / {} frames. {}% complete. {} Frames remaining . . .".format(
+                        self.frame, self.gui.display.frame_number, self.gui.frame_count, self.progress,
+                        self.gui.frame_count - self.frame))
+                # Increase the progress bar and set to new frame
+                self.frame = self.gui.display.frame_number
+                self.progress += add
+                # self.gui.onCountChanged(self.progress)
+                self.mySignal.emit(self.progress)
+                if self.gui.frame_count - self.frame < 1:
+                    print("Process complete . . . Please wait.")
+        print("Timer finished")
 
 
 if __name__ == "__main__":

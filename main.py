@@ -23,20 +23,19 @@ import support.extract_input_data as extract_data
 import support.display_data as display_data
 import updated_interface as test_gui
 import sys
-
+import pyqtgraph as pg
 
 def main(argv=None):
     data = extract_data.ExtractData()
     display = display_data.DisplayData(data)
     # distance_overlay(display, "RBigToe", "LBigToe")
     # display.distance_overlay()
-    app = interface.QApplication([])
+    app = test_gui.QApplication([])
     app.aboutToQuit.connect(app.deleteLater)
     #gui = interface.GUI(display)
     gui = test_gui.GUI(display)
-
-
     app.exec_()
+    pg.exit()
 
 
 if __name__ == '__main__':
