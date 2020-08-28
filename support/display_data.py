@@ -1,5 +1,10 @@
 import cv2
 import matplotlib.pyplot as plt
+import matplotlib
+
+matplotlib.use('Qt5Agg')
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
+from matplotlib.figure import Figure
 from matplotlib.axes._axes import _log as matplotlib_axes_logger
 
 matplotlib_axes_logger.setLevel('ERROR')
@@ -19,6 +24,8 @@ class DisplayData:
 
     def __init__(self, data):
         self.detected_frame_list = []
+        self.image = None
+        self.image_path = None
         self.right_foot_count = 0
         self.left_foot_count = 0
         # Define list for index/frames in which step is made
@@ -31,7 +38,9 @@ class DisplayData:
             if self.data.check_keypoint_visibility("REar"):
                 print("ear", len(self.data.input_files))
                 self.data.input_files = bf.anonymise_images(self.data.input_files,
-                                                            [item[:-1] for item in self.data.key_points["REar"]], [item[:-1] for item in self.data.key_points["REar"]], [item[:-1] for item in self.data.key_points["LEar"]])
+                                                            [item[:-1] for item in self.data.key_points["REar"]],
+                                                            [item[:-1] for item in self.data.key_points["REar"]],
+                                                            [item[:-1] for item in self.data.key_points["LEar"]])
             else:
                 print("BAD DATA! Failure attempting to blur faces!")
             '''
@@ -43,11 +52,12 @@ class DisplayData:
                                                             [item[:-1] for item in self.data.key_points["Nose"]])
             '''
 
-
             # print("data", self.data.input_files)
         if args["anonc"] == 'True':
             self.data.input_files = bf.anonymise_coronal_images(self.data.input_files,
-                                                                [item[:-1] for item in self.data.key_points["Nose"]],  [item[:-1] for item in self.data.key_points["REar"]],  [item[:-1] for item in self.data.key_points["LEar"]])
+                                                                [item[:-1] for item in self.data.key_points["Nose"]],
+                                                                [item[:-1] for item in self.data.key_points["REar"]],
+                                                                [item[:-1] for item in self.data.key_points["LEar"]])
 
         # initial keypoints for distance
         self.keypoint1 = "LBigToe"
@@ -87,7 +97,7 @@ class DisplayData:
         if args['video']:
             self.video_path = args['video']
         else:
-            self.video_path = 'op_video/test2.avi'
+            self.video_path = 'cam1_output_video/test.avi'
         self.duration, self.frame_count, self.fps = bf.get_video_length(self.video_path)
         # Get number of steps
         self.velocity_list = []
@@ -110,13 +120,15 @@ class DisplayData:
         try:
             self.get_velocity()
             self.get_cadence()
-        except:
-            pass
+        except Exception as e:
+            raise e
         self.points = []
-        self.image = cv2.imread('support\\left_checkerboard\\815.jpg')
-
 
     def select_points(self):
+        if self.image_path:
+            self.image = cv2.imread(self.image_path)
+        else:
+            return [(0, 0), (0, 0)]
         clone = self.image.copy()
         cv2.namedWindow('image')
         cv2.setMouseCallback("image", self.convert_points)
@@ -284,7 +296,7 @@ class DisplayData:
                 self.frame_number += 1
                 temp_list.append(frame)
             self.frame_list = temp_list
-        if self.gui.distance_checkbox == Qt.Checked:
+        if self.gui.s_distance_checkBox_6 == Qt.Checked:
             print("Saving distances to text file")
             self.save_text(self.distances, "Distance")
         max_dist = 0
@@ -295,8 +307,8 @@ class DisplayData:
                 max_dist = dist
             if dist < min_dist:
                 min_dist = dist
-        self.gui.max_dist_label.setText("Max dist: {}".format(max_dist))
-        self.gui.min_dist_label.setText("Min dist: {}".format(min_dist))
+        # TODO self.gui.max_dist_label.setText("Max dist: {}".format(max_dist))
+        # self.gui.min_dist_label.setText("Min dist: {}".format(min_dist))
 
     def get_angle(self, p3, p2, p1, print_option=None):
         """
@@ -424,15 +436,17 @@ class DisplayData:
             self.frame_list = temp_list
 
         """ Save the calculated angles to a text file """
-        if self.gui.angle_checkbox == Qt.Checked:
+        if self.gui.s_angle_checkBox == Qt.Checked:
             print("Saving angles to text file")
             self.save_text(self.angles, "Angle")
         max_angle = 0
         for an_angle in self.num_angles:
             if an_angle > max_angle:
                 max_angle = an_angle
-
-        self.gui.angle_label.setText("Max Angle: {}".format(max_angle))
+        try:
+            self.gui.angle_label.setText("Max Angle: {}".format(max_angle))
+        except:
+            pass
 
     def leg_body_angle_overlay(self):
         """
@@ -1285,7 +1299,6 @@ class DisplayData:
                             pass
                 print("left indexlist", left_index_list)
 
-
                 if display:
                     frame = self.add_points_to_image(frame,
                                                      [self.fp("RHeel", idx), self.fp("RBigToe", idx),
@@ -1557,6 +1570,7 @@ class DisplayData:
         print("Cadence", self.cadence)
         print("Step list", step_list)
 
+        ''' Plotting Line plot unfiltered cadence'''
         plt.figure()
         plt.plot(step_list[1:], self.cadence, linewidth=2, linestyle="-", c="b")
         plt.title('Unfiltered cadence')
@@ -1570,6 +1584,7 @@ class DisplayData:
         # plt.gca().invert_yaxis()
         plt.savefig("plots/UnfilteredCadence.png")
 
+        ''' Plotting Scatter plot unfiltered cadence'''
         plt.figure()
         plt.scatter(step_list[1:], self.cadence, c=colors, s=area, alpha=0.5)
         plt.title('Unfiltered cadence')
@@ -1610,6 +1625,7 @@ class DisplayData:
         print("filtered std: ", std)
         print("Filtered Cadence", self.cadence)
 
+        ''' Plotting line plot of filtered cadence'''
         plt.figure()
         plt.plot(step_list[1:], self.cadence, linewidth=2, linestyle="-", c="b")
         plt.title('Filtered cadence')
@@ -1623,6 +1639,7 @@ class DisplayData:
         # plt.gca().invert_yaxis()
         plt.savefig("plots/FilteredCadence.png")
 
+        ''' Plotting scatter plot filtered cadence'''
         plt.figure()
         plt.scatter(step_list[1:], self.cadence, c=colors, s=area, alpha=0.5)
         plt.title('Filtered cadence')
@@ -1640,4 +1657,17 @@ class DisplayData:
             save_to_file_list.append("Frame number: {} Cadence: {}".format(step_list[idx], cadence))
         self.save_text(save_to_file_list, "Cadence")
 
+        ''' Create a Qt plot for filtered scatter cadence'''
+        self.filtered_cadence_scatter_plot = MplCanvas(self, width=5, height=4, dpi=100)
+        self.filtered_cadence_scatter_plot.axes.scatter(step_list[1:], self.cadence, c=colors, s=area, alpha=0.5)
+
+
         # plt.show()
+
+
+class MplCanvas(FigureCanvasQTAgg):
+
+    def __init__(self, parent=None, width=25, height=25, dpi=500):
+        fig = Figure(figsize=(width, height), dpi=dpi)
+        self.axes = fig.add_subplot(111)
+        super(MplCanvas, self).__init__(fig)

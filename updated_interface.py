@@ -1,5 +1,7 @@
 import os
 from os import startfile
+
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
 import sys
 import glob
 import support.base_functions as bf
@@ -9,7 +11,6 @@ from PyQt5.QtGui import *
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
-
 class GUI(QMainWindow):
 
     def __init__(self, display):
@@ -17,7 +18,7 @@ class GUI(QMainWindow):
         self.num_operations = 0
         self.calc = None
         self.output_movie = ""
-        self.display = display
+
         # self.display.gui = self
         # self.frame_count = self.display.frame_count
         # self.app = QApplication([]) (not needed?)
@@ -30,8 +31,11 @@ class GUI(QMainWindow):
         self.setupUi(self.MainWindow)
         self.MainWindow.setWindowTitle("Early development user interface A204 V2.31")
         QApplication.setStyle(QStyleFactory.create("Fusion"))
+        self.display = display
+        self.display.gui = self
+        self.plot_frame_init()  # TODO currently must be defined after display data
+        self.frame_count = self.display.frame_count
         self.MainWindow.show()
-
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -46,6 +50,8 @@ class GUI(QMainWindow):
         self.init_calibrate_tab()
         self.init_sagittal_tab()
         self.coronal_tab_init()
+        self.metrics_tab_init()
+        self.plots_tab_init()
 
     def init_calibrate_tab(self):
         self.calibrate_tab = QtWidgets.QWidget()
@@ -72,15 +78,26 @@ class GUI(QMainWindow):
         self.calibrate_height_pushButton.setObjectName("calibrate_height_pushButton")
         self.calibrate_height_pushButton.clicked.connect(self.calibrateheightbuttonclick)
 
+        self.ratio_label = QtWidgets.QLabel(self.calibrate_tab)
+        self.ratio_label.setGeometry(QtCore.QRect(474, 452, 305, 43))
+        font = QtGui.QFont()
+        font.setPointSize(16)
+        self.ratio_label.setFont(font)
+        self.ratio_label.setObjectName("ratio_label")
+
     def pixels_to_mm(self):
         self.pixel_ratio = self.height / self.pixel_distance
+        self.ratio_label.setText("Pixel to millimetre ratio: {}".format(str(self.pixel_ratio)))
         print("One pixel is equivalent to {} mms".format(self.pixel_ratio))
 
     def calibrateheightbuttonclick(self):
         try:
             self.height = int(self.height_lineEdit.text())
-            self.calibrate_thread = Worker3(self)
-            self.calibrate_thread.start()
+            if self.display.image_path:
+                self.calibrate_thread = Worker3(self)
+                self.calibrate_thread.start()
+            else:
+                print("Select an image!")
         except ValueError:
             print("Enter a height first")
 
@@ -110,21 +127,26 @@ class GUI(QMainWindow):
 
         # self.image = QMovie("support/skeleton_gif.gif")
 
-
-
-        #self.frame = QtWidgets.QFrame(self.calibrate_tab)
-        #self.frame.setGeometry(QtCore.QRect(128, 60, 543, 353))
-        #self.frame.setAutoFillBackground(True)
-        #self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
-        #self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
-        #self.frame.setObjectName("frame")
+        # self.frame = QtWidgets.QFrame(self.calibrate_tab)
+        # self.frame.setGeometry(QtCore.QRect(128, 60, 543, 353))
+        # self.frame.setAutoFillBackground(True)
+        # self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        # self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
+        # self.frame.setObjectName("frame")
 
         self.calibrate_frame_lineEdit_2 = QtWidgets.QLineEdit(self.calibrate_tab)
-        self.calibrate_frame_lineEdit_2.setGeometry(QtCore.QRect(130, 22, 113, 20))
+        self.calibrate_frame_lineEdit_2.setGeometry(QtCore.QRect(130, 22, 263, 20))
         self.calibrate_frame_lineEdit_2.setObjectName("calibrate_frame_lineEdit_2")
+        # The enter button
         self.calibrate_frame_pushButton_2 = QtWidgets.QPushButton(self.calibrate_tab)
-        self.calibrate_frame_pushButton_2.setGeometry(QtCore.QRect(244, 22, 75, 21))
+        self.calibrate_frame_pushButton_2.setGeometry(QtCore.QRect(394, 22, 75, 21))
         self.calibrate_frame_pushButton_2.setObjectName("calibrate_frame_pushButton_2")
+
+        self.calibrate_browsefile_pushButton = QtWidgets.QPushButton(self.calibrate_tab)
+        self.calibrate_browsefile_pushButton.setGeometry(QtCore.QRect(468, 22, 75, 21))
+        self.calibrate_browsefile_pushButton.setObjectName("calibrate_browsefile_pushButton")
+        self.calibrate_browsefile_pushButton.clicked.connect(self.calibrate_open_file)
+
         self.calibrate_selectframe_label_2 = QtWidgets.QLabel(self.calibrate_tab)
         self.calibrate_selectframe_label_2.setGeometry(QtCore.QRect(12, 14, 121, 31))
         font = QtGui.QFont()
@@ -132,6 +154,13 @@ class GUI(QMainWindow):
         self.calibrate_selectframe_label_2.setFont(font)
         self.calibrate_selectframe_label_2.setObjectName("calibrate_selectframe_label_2")
         self.tabWidget.addTab(self.calibrate_tab, "")
+
+    def calibrate_open_file(self):
+
+        fname = QFileDialog.getOpenFileName(self, 'Open file')
+        self.calibrate_file_path = str(fname[0])
+        self.calibrate_frame_lineEdit_2.setText(self.calibrate_file_path)
+        self.display.image_path = self.calibrate_file_path
 
     def init_sagittal_tab(self):
         self.saggital_tab = QtWidgets.QWidget()
@@ -145,21 +174,107 @@ class GUI(QMainWindow):
         self.s_init_save_output()
         self.s_init_dropdownbox()
 
-
-
     def init_s_vid_frame(self):
+        self.s_vid_frame = QLabel(self.saggital_tab)
+
+        # self.s_vid = QMovie("support/skeleton_gif.gif")
+        self.s_vid_frame.setGeometry(QtCore.QRect(178, 30, 409, 311))
+        # self.s_vid_frame.setMovie(self.s_vid)
+        # self.s_vid.start()
+        example_image = 'example1.png'
+
+        self.s_vid_frame.setObjectName("s_vid_frame")
+        pixmap = QPixmap(example_image)
+        self.s_vid_frame.setPixmap(pixmap)
+        '''
         self.s_vid_frame = QtWidgets.QFrame(self.saggital_tab)
         self.s_vid_frame.setGeometry(QtCore.QRect(178, 30, 409, 311))
         self.s_vid_frame.setAutoFillBackground(True)
         self.s_vid_frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.s_vid_frame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.s_vid_frame.setObjectName("s_vid_frame")
+        '''
 
     def init_s_start_button(self):
         self.s_start_pushButton_3 = QtWidgets.QPushButton(self.saggital_tab)
         self.s_start_pushButton_3.setGeometry(QtCore.QRect(680, 478, 89, 41))
         self.s_start_pushButton_3.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.s_start_pushButton_3.setObjectName("s_start_pushButton_3")
+        self.s_start_pushButton_3.clicked.connect(self.startbuttonclick)
+        self.s_start_pushButton_3.clicked.connect(self.start_button_functions)
+
+    def startbuttonclick(self):
+        """
+        sagittal plane assign progress bar thread
+        :return:
+        """
+        if self.s_angle_checkBox == Qt.Checked:
+            self.num_operations += 1
+        if self.s_distance_checkBox_6 == Qt.Checked:
+            self.num_operations += 1
+        if self.s_legangle_checkBox_4 == Qt.Checked:
+            self.num_operations += 1
+        if self.s_lknee_angle_checkBox_2 == Qt.Checked:
+            self.num_operations += 1
+        if self.s_rknee_angle_checkBox_3 == Qt.Checked:
+            self.num_operations += 1
+        if not self.calc:
+            self.calc = External(self)
+            self.calc.mySignal.connect(self.s_onCountChanged)
+            self.calc.start()
+        else:
+            print("set counter to 0")
+            self.calc.progress = 0
+            self.calc.count = 0
+
+    @pyqtSlot()
+    def start_button_functions(self):
+        """
+        Assign worker threads for processing functions in the sagittal plane
+        """
+        # Remove any current images in output file
+        self.worker_thread = Worker(self)
+        self.worker_thread.finish_signal.connect(self.process_complete_messagebox)
+        self.worker_thread.start()
+        self.worker_thread.start_signal.connect(self.no_option_messagebox)
+
+    @pyqtSlot()
+    def no_option_messagebox(self):
+        """
+        If no options are selected prompt user with a message box
+        """
+        print("No option selected ! ")
+        msg = QMessageBox()
+        msg.setWindowTitle("Whoops ! ")
+        msg.setText("No options were selected ! ")
+        msg.setIcon(QMessageBox.Information)
+        x = msg.exec_()
+
+    @pyqtSlot()
+    def process_complete_messagebox(self):
+        """
+        Once processing is complete notify the user
+        """
+        print("Process complete ! ")
+        msg = QMessageBox.question(self, "The operations have successfully finished ! ",
+                                   "Do you want to preview the output video?",
+                                   QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel, QMessageBox.Cancel)
+        if msg == QMessageBox.Yes:
+            my_path = os.path.abspath(os.path.dirname(__file__))
+            path = os.path.join(my_path, "processed_video\\Output.avi")
+            # print("DIRNAME", path, my_path)
+            try:
+                startfile(path)
+            except FileNotFoundError:
+                pass
+            try:
+                path = os.path.join(my_path, "Output.avi")
+                startfile(path)
+
+            except FileNotFoundError:
+                print("Preview not supported currently . . . #TODO")
+        else:
+            pass
 
     def init_s_video(self):
         self.s_vid_open_pushButton_6 = QtWidgets.QPushButton(self.saggital_tab)
@@ -182,7 +297,27 @@ class GUI(QMainWindow):
         self.s_forward_pushButton_9.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.s_forward_pushButton_9.setObjectName("s_forward_pushButton_9")
 
-
+        self.s_measurements_label_6 = QtWidgets.QLabel(self.saggital_tab)
+        self.s_measurements_label_6.setGeometry(QtCore.QRect(4, 32, 169, 16))
+        font = QtGui.QFont()
+        font.setFamily("MS Shell Dlg 2")
+        font.setPointSize(13)
+        font.setBold(False)
+        font.setUnderline(True)
+        font.setWeight(50)
+        self.s_measurements_label_6.setFont(font)
+        self.s_measurements_label_6.setObjectName("s_measurements_label_6")
+        self.s_playback_label_7 = QtWidgets.QLabel(self.saggital_tab)
+        self.s_playback_label_7.setGeometry(QtCore.QRect(616, 32, 169, 16))
+        font = QtGui.QFont()
+        font.setFamily("MS Shell Dlg 2")
+        font.setPointSize(13)
+        font.setBold(False)
+        font.setUnderline(True)
+        font.setWeight(50)
+        self.s_playback_label_7.setFont(font)
+        self.s_playback_label_7.setObjectName("s_playback_label_7")
+        self.tabWidget.addTab(self.saggital_tab, "")
 
     def s_init_checkboxes(self):
         self.s_angle_checkBox = QtWidgets.QCheckBox(self.saggital_tab)
@@ -262,7 +397,6 @@ class GUI(QMainWindow):
             self.lknee_angle_checkBox_2 = Qt.Unchecked
             print('left knee Angle Unchecked')
 
-
     def s_init_progressbar(self):
         self.s_progressBar = QtWidgets.QProgressBar(self.saggital_tab)
         self.s_progressBar.setGeometry(QtCore.QRect(14, 480, 661, 37))
@@ -333,7 +467,6 @@ class GUI(QMainWindow):
         self.s_dp1_comboBox_3.addItem("Neck")
         self.s_dp1_comboBox_3.activated[str].connect(self.set_dropdown2)
 
-
         self.s_dp1_label_4 = QtWidgets.QLabel(self.saggital_tab)
         self.s_dp1_label_4.setGeometry(QtCore.QRect(16, 400, 165, 16))
         font = QtGui.QFont()
@@ -347,119 +480,132 @@ class GUI(QMainWindow):
         self.s_dp2_label_5.setFont(font)
         self.s_dp2_label_5.setObjectName("s_dp2_label_5")
 
-
-
-        self.s_measurements_label_6 = QtWidgets.QLabel(self.saggital_tab)
-        self.s_measurements_label_6.setGeometry(QtCore.QRect(4, 32, 169, 16))
-        font = QtGui.QFont()
-        font.setFamily("MS Shell Dlg 2")
-        font.setPointSize(13)
-        font.setBold(False)
-        font.setUnderline(True)
-        font.setWeight(50)
-        self.s_measurements_label_6.setFont(font)
-        self.s_measurements_label_6.setObjectName("s_measurements_label_6")
-        self.s_playback_label_7 = QtWidgets.QLabel(self.saggital_tab)
-        self.s_playback_label_7.setGeometry(QtCore.QRect(616, 32, 169, 16))
-        font = QtGui.QFont()
-        font.setFamily("MS Shell Dlg 2")
-        font.setPointSize(13)
-        font.setBold(False)
-        font.setUnderline(True)
-        font.setWeight(50)
-        self.s_playback_label_7.setFont(font)
-        self.s_playback_label_7.setObjectName("s_playback_label_7")
-        self.tabWidget.addTab(self.saggital_tab, "")
-
     def coronal_tab_init(self):
         self.coronal_tab = QtWidgets.QWidget()
         self.coronal_tab.setObjectName("coronal_tab")
-        self.pushButton_11 = QtWidgets.QPushButton(self.coronal_tab)
-        self.pushButton_11.setGeometry(QtCore.QRect(712, 436, 77, 29))
-        self.pushButton_11.setObjectName("pushButton_11")
-        self.checkBox_8 = QtWidgets.QCheckBox(self.coronal_tab)
-        self.checkBox_8.setGeometry(QtCore.QRect(22, 418, 167, 41))
-        self.checkBox_8.setBaseSize(QtCore.QSize(0, 0))
-        font = QtGui.QFont()
-        font.setPointSize(20)
-        self.checkBox_8.setFont(font)
-        self.checkBox_8.setIconSize(QtCore.QSize(16, 16))
-        self.checkBox_8.setObjectName("checkBox_8")
-        self.lineEdit_4 = QtWidgets.QLineEdit(self.coronal_tab)
-        self.lineEdit_4.setGeometry(QtCore.QRect(476, 436, 233, 29))
-        self.lineEdit_4.setObjectName("lineEdit_4")
+
+        self.c_save_output_init()
+        self.c_progressbar_init()
+        self.c_startbutton_init()
+        self.c_measurement_checkboxes_init()
+        self.c_frame_init()
+
+        self.tabWidget.addTab(self.coronal_tab, "")
+
+    def c_save_output_init(self):
+        self.c_saveoutput_pushButton = QtWidgets.QPushButton(self.coronal_tab)
+        self.c_saveoutput_pushButton.setGeometry(QtCore.QRect(712, 436, 77, 29))
+        self.c_saveoutput_pushButton.setObjectName("c_saveoutput_pushButton")
+        self.c_footangle_checkBox = QtWidgets.QCheckBox(self.coronal_tab)
+        self.c_footangle_checkBox.setGeometry(QtCore.QRect(22, 418, 167, 41))
+        self.c_footangle_checkBox.setBaseSize(QtCore.QSize(0, 0))
+        self.c_output_lineEdit = QtWidgets.QLineEdit(self.coronal_tab)
+        self.c_output_lineEdit.setGeometry(QtCore.QRect(476, 436, 233, 29))
+        self.c_output_lineEdit.setObjectName("c_output_lineEdit")
+
+    def c_progressbar_init(self):
         self.progressBar_2 = QtWidgets.QProgressBar(self.coronal_tab)
         self.progressBar_2.setGeometry(QtCore.QRect(14, 480, 661, 37))
         self.progressBar_2.setProperty("value", 24)
         self.progressBar_2.setObjectName("progressBar_2")
-        self.pushButton_4 = QtWidgets.QPushButton(self.coronal_tab)
-        self.pushButton_4.setGeometry(QtCore.QRect(680, 478, 89, 41))
-        self.pushButton_4.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-        self.pushButton_4.setObjectName("pushButton_4")
-        self.checkBox_11 = QtWidgets.QCheckBox(self.coronal_tab)
-        self.checkBox_11.setGeometry(QtCore.QRect(22, 366, 167, 53))
+
+    def c_startbutton_init(self):
+        self.c_start_pushButton = QtWidgets.QPushButton(self.coronal_tab)
+        self.c_start_pushButton.setGeometry(QtCore.QRect(680, 478, 89, 41))
+        self.c_start_pushButton.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        self.c_start_pushButton.setObjectName("c_start_pushButton")
+
+    def c_measurement_checkboxes_init(self):
         font = QtGui.QFont()
         font.setPointSize(20)
-        self.checkBox_11.setFont(font)
-        self.checkBox_11.setToolTipDuration(-1)
-        self.checkBox_11.setStatusTip("")
-        self.checkBox_11.setWhatsThis("")
-        self.checkBox_11.setObjectName("checkBox_11")
+        self.c_footangle_checkBox.setFont(font)
+        self.c_footangle_checkBox.setIconSize(QtCore.QSize(16, 16))
+        self.c_footangle_checkBox.setObjectName("c_footangle_checkBox")
+
+        self.c_stepwidth_checkBox = QtWidgets.QCheckBox(self.coronal_tab)
+        self.c_stepwidth_checkBox.setGeometry(QtCore.QRect(22, 366, 167, 53))
+        font = QtGui.QFont()
+        font.setPointSize(20)
+        self.c_stepwidth_checkBox.setFont(font)
+        self.c_stepwidth_checkBox.setToolTipDuration(-1)
+        self.c_stepwidth_checkBox.setStatusTip("")
+        self.c_stepwidth_checkBox.setWhatsThis("")
+        self.c_stepwidth_checkBox.setObjectName("c_stepwidth_checkBox")
+
+        self.c_measurements_label = QtWidgets.QLabel(self.coronal_tab)
+        self.c_measurements_label.setGeometry(QtCore.QRect(16, 350, 169, 16))
+        font = QtGui.QFont()
+        font.setFamily("MS Shell Dlg 2")
+        font.setPointSize(13)
+        font.setBold(False)
+        font.setUnderline(True)
+        font.setWeight(50)
+        self.c_measurements_label.setFont(font)
+        self.c_measurements_label.setObjectName("c_measurements_label")
+
+    def c_frame_init(self):
         self.frame_2 = QtWidgets.QFrame(self.coronal_tab)
         self.frame_2.setGeometry(QtCore.QRect(178, 30, 409, 311))
         self.frame_2.setAutoFillBackground(True)
         self.frame_2.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame_2.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame_2.setObjectName("frame_2")
-        self.checkBox_12 = QtWidgets.QCheckBox(self.coronal_tab)
-        self.checkBox_12.setGeometry(QtCore.QRect(476, 398, 149, 35))
+        self.c_saveoutput_checkBox = QtWidgets.QCheckBox(self.coronal_tab)
+        self.c_saveoutput_checkBox.setGeometry(QtCore.QRect(476, 398, 149, 35))
         font = QtGui.QFont()
         font.setPointSize(12)
-        self.checkBox_12.setFont(font)
-        self.checkBox_12.setObjectName("checkBox_12")
-        self.pushButton_12 = QtWidgets.QPushButton(self.coronal_tab)
-        self.pushButton_12.setGeometry(QtCore.QRect(684, 132, 67, 43))
-        self.pushButton_12.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-        self.pushButton_12.setObjectName("pushButton_12")
-        self.pushButton_13 = QtWidgets.QPushButton(self.coronal_tab)
-        self.pushButton_13.setGeometry(QtCore.QRect(620, 202, 131, 43))
-        self.pushButton_13.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-        self.pushButton_13.setObjectName("pushButton_13")
-        self.pushButton_14 = QtWidgets.QPushButton(self.coronal_tab)
-        self.pushButton_14.setGeometry(QtCore.QRect(620, 132, 65, 43))
-        self.pushButton_14.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-        self.pushButton_14.setObjectName("pushButton_14")
-        self.label_8 = QtWidgets.QLabel(self.coronal_tab)
-        self.label_8.setGeometry(QtCore.QRect(616, 32, 169, 16))
+        self.c_saveoutput_checkBox.setFont(font)
+        self.c_saveoutput_checkBox.setObjectName("c_saveoutput_checkBox")
+        self.c_forward_pushButton = QtWidgets.QPushButton(self.coronal_tab)
+        self.c_forward_pushButton.setGeometry(QtCore.QRect(684, 132, 67, 43))
+        self.c_forward_pushButton.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        self.c_forward_pushButton.setObjectName("c_forward_pushButton")
+        self.c_openfile_pushButton = QtWidgets.QPushButton(self.coronal_tab)
+        self.c_openfile_pushButton.setGeometry(QtCore.QRect(620, 202, 131, 43))
+        self.c_openfile_pushButton.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        self.c_openfile_pushButton.setObjectName("c_openfile_pushButton")
+        self.c_back_pushButton = QtWidgets.QPushButton(self.coronal_tab)
+        self.c_back_pushButton.setGeometry(QtCore.QRect(620, 132, 65, 43))
+        self.c_back_pushButton.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        self.c_back_pushButton.setObjectName("c_back_pushButton")
+        self.c_playback_label = QtWidgets.QLabel(self.coronal_tab)
+        self.c_playback_label.setGeometry(QtCore.QRect(616, 32, 169, 16))
         font = QtGui.QFont()
         font.setFamily("MS Shell Dlg 2")
         font.setPointSize(13)
         font.setBold(False)
         font.setUnderline(True)
         font.setWeight(50)
-        self.label_8.setFont(font)
-        self.label_8.setObjectName("label_8")
-        self.pushButton_15 = QtWidgets.QPushButton(self.coronal_tab)
-        self.pushButton_15.setGeometry(QtCore.QRect(620, 62, 131, 43))
-        self.pushButton_15.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-        self.pushButton_15.setObjectName("pushButton_15")
-        self.label_9 = QtWidgets.QLabel(self.coronal_tab)
-        self.label_9.setGeometry(QtCore.QRect(16, 350, 169, 16))
-        font = QtGui.QFont()
-        font.setFamily("MS Shell Dlg 2")
-        font.setPointSize(13)
-        font.setBold(False)
-        font.setUnderline(True)
-        font.setWeight(50)
-        self.label_9.setFont(font)
-        self.label_9.setObjectName("label_9")
-        self.tabWidget.addTab(self.coronal_tab, "")
+        self.c_playback_label.setFont(font)
+        self.c_playback_label.setObjectName("c_playback_label")
+        self.c_playback_pushButton = QtWidgets.QPushButton(self.coronal_tab)
+        self.c_playback_pushButton.setGeometry(QtCore.QRect(620, 62, 131, 43))
+        self.c_playback_pushButton.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        self.c_playback_pushButton.setObjectName("c_playback_pushButton")
 
+    def metrics_tab_init(self):
         self.metrics_tab = QtWidgets.QWidget()
         self.metrics_tab.setObjectName("metrics_tab")
         self.tabWidget.addTab(self.metrics_tab, "")
+
+    def plots_tab_init(self):
         self.plots_tab = QtWidgets.QWidget()
         self.plots_tab.setObjectName("plots_tab")
+        self.plot_dropdown_init()
+
+    def plot_frame_init(self):
+
+        self.filtered_cadence_scatter_toolbar = NavigationToolbar(self.display.filtered_cadence_scatter_plot, self)
+        self.plot_layout = QtWidgets.QVBoxLayout()
+        self.plot_layout.addWidget(self.filtered_cadence_scatter_toolbar)
+        self.plot_layout.addWidget(self.display.filtered_cadence_scatter_plot)
+
+        self.plot_widget = QtWidgets.QWidget(self.plots_tab)
+        self.plot_widget.setLayout(self.plot_layout)
+        self.plot_widget.setGeometry(QtCore.QRect(90, 10, 619, 403))
+        self.plot_widget.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
+        '''
+        
         self.frame_3 = QtWidgets.QFrame(self.plots_tab)
         self.frame_3.setGeometry(QtCore.QRect(90, 10, 619, 403))
         self.frame_3.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
@@ -467,9 +613,31 @@ class GUI(QMainWindow):
         self.frame_3.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame_3.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame_3.setObjectName("frame_3")
-        self.comboBox_2 = QtWidgets.QComboBox(self.plots_tab)
-        self.comboBox_2.setGeometry(QtCore.QRect(16, 466, 259, 41))
-        self.comboBox_2.setObjectName("comboBox_2")
+        '''
+
+    def set_plot_dropdown(self, text):
+        self.plot = text
+        print("{} selected".format(text))
+        if text == "Filtered Cadence Scatter Plot":
+            print("Setting {}".format(text))
+            self.filtered_cadence_scatter_toolbar = NavigationToolbar(self.display.filtered_cadence_scatter_plot, self)
+            self.plot_layout = QtWidgets.QVBoxLayout()
+            self.plot_layout.addWidget(self.filtered_cadence_scatter_toolbar)
+            self.plot_layout.addWidget(self.display.filtered_cadence_scatter_plot)
+            # self.plot_widget.setLayout(layout)
+            self.plot_widget.update()
+
+
+    def plot_dropdown_init(self):
+
+        self.plot_dropdown = QtWidgets.QComboBox(self.plots_tab)
+        self.plot_dropdown.setGeometry(QtCore.QRect(16, 466, 259, 41))
+        self.plot_dropdown.setObjectName("plot_dropdown")
+
+        self.plot_dropdown.addItem("Filtered Cadence Scatter Plot")
+
+        self.plot_dropdown.activated[str].connect(self.set_plot_dropdown)
+
         self.pushButton_5 = QtWidgets.QPushButton(self.plots_tab)
         self.pushButton_5.setGeometry(QtCore.QRect(276, 464, 87, 45))
         self.pushButton_5.setObjectName("pushButton_5")
@@ -487,9 +655,9 @@ class GUI(QMainWindow):
         font.setWeight(50)
         self.label_11.setFont(font)
         self.label_11.setObjectName("label_11")
-        self.lineEdit_5 = QtWidgets.QLineEdit(self.plots_tab)
-        self.lineEdit_5.setGeometry(QtCore.QRect(418, 464, 241, 43))
-        self.lineEdit_5.setObjectName("lineEdit_5")
+        self.p_output_lineEdit = QtWidgets.QLineEdit(self.plots_tab)
+        self.p_output_lineEdit.setGeometry(QtCore.QRect(418, 464, 241, 43))
+        self.p_output_lineEdit.setObjectName("p_output_lineEdit")
         self.label_12 = QtWidgets.QLabel(self.plots_tab)
         self.label_12.setGeometry(QtCore.QRect(416, 440, 169, 16))
         font = QtGui.QFont()
@@ -528,10 +696,14 @@ class GUI(QMainWindow):
         self.weight_pushButton_2.setText(_translate("MainWindow", "Enter"))
         self.calibrate_frame_lineEdit_2.setText(_translate("MainWindow", "Frame path here"))
         self.calibrate_frame_pushButton_2.setText(_translate("MainWindow", "Enter"))
+        self.calibrate_browsefile_pushButton.setText(_translate("MainWindow", "Browse"))
         self.calibrate_selectframe_label_2.setToolTip(
             _translate("MainWindow", "Select the frame path to calibrate the measurements"))
         self.calibrate_selectframe_label_2.setText(_translate("MainWindow", "Select frame:"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.calibrate_tab), _translate("MainWindow", "Calibrate"))
+        self.ratio_label.setText(_translate("MainWindow", "Pixel to millimetre ratio: N/A"))
+        self.ratio_label.setToolTip(
+            _translate("MainWindow", "The ratio between the chosen frame pixels and height in mm"))
 
         self.s_start_pushButton_3.setToolTip(_translate("MainWindow", "Start the operations!"))
         self.s_start_pushButton_3.setText(_translate("MainWindow", "Start"))
@@ -552,7 +724,7 @@ class GUI(QMainWindow):
         self.s_progressBar.setToolTip(_translate("MainWindow", "<html><head/><body><p>statustooltip</p></body></html>"))
         self.s_saveoutput_checkBox_5.setToolTip(_translate("MainWindow", "Save the output to specified path"))
         self.s_saveoutput_checkBox_5.setText(_translate("MainWindow", "Save output:"))
-        self.s_saveoutput_lineEdit_3.setText(_translate("MainWindow", "Enter output path here"))
+        self.s_saveoutput_lineEdit_3.setText(_translate("MainWindow", "output/"))
         self.s_dp1_label_4.setToolTip(_translate("MainWindow", "Select the first point to measure distance between"))
         self.s_dp1_label_4.setText(_translate("MainWindow", "Distance point 1:"))
         self.s_dp2_label_5.setToolTip(_translate("MainWindow", "Select the second point to measure distance between"))
@@ -566,27 +738,27 @@ class GUI(QMainWindow):
         self.s_playback_label_7.setText(_translate("MainWindow", "Playback controls"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.saggital_tab), _translate("MainWindow", "Sagittal"))
 
-        self.pushButton_11.setText(_translate("MainWindow", "Enter"))
-        self.checkBox_8.setToolTip(_translate("MainWindow", "Add the angle between \"\""))
-        self.checkBox_8.setText(_translate("MainWindow", "Foot angle"))
-        self.lineEdit_4.setText(_translate("MainWindow", "Enter output path here"))
+        self.c_saveoutput_pushButton.setText(_translate("MainWindow", "Enter"))
+        self.c_footangle_checkBox.setToolTip(_translate("MainWindow", "Add the angle between \"\""))
+        self.c_footangle_checkBox.setText(_translate("MainWindow", "Foot angle"))
+        self.c_output_lineEdit.setText(_translate("MainWindow", "Enter output path here"))
         self.progressBar_2.setToolTip(_translate("MainWindow", "<html><head/><body><p>statustooltip</p></body></html>"))
-        self.pushButton_4.setToolTip(_translate("MainWindow", "Start the operations!"))
-        self.pushButton_4.setText(_translate("MainWindow", "Start"))
-        self.checkBox_11.setToolTip(_translate("MainWindow", "Add the angle between \"\""))
-        self.checkBox_11.setText(_translate("MainWindow", "Step width"))
-        self.checkBox_12.setToolTip(_translate("MainWindow", "Save the output to specified path"))
-        self.checkBox_12.setText(_translate("MainWindow", "Save output:"))
-        self.pushButton_12.setText(_translate("MainWindow", "Forward"))
-        self.pushButton_13.setToolTip(_translate("MainWindow", "Open file location"))
-        self.pushButton_13.setText(_translate("MainWindow", "Open file"))
-        self.pushButton_14.setText(_translate("MainWindow", "Back"))
-        self.label_8.setToolTip(_translate("MainWindow", "Select the measurements to find"))
-        self.label_8.setText(_translate("MainWindow", "Playback controls"))
-        self.pushButton_15.setToolTip(_translate("MainWindow", "Play/Pause the video"))
-        self.pushButton_15.setText(_translate("MainWindow", "Play/Pause"))
-        self.label_9.setToolTip(_translate("MainWindow", "Select the measurements to find"))
-        self.label_9.setText(_translate("MainWindow", "Select measurements:"))
+        self.c_start_pushButton.setToolTip(_translate("MainWindow", "Start the operations!"))
+        self.c_start_pushButton.setText(_translate("MainWindow", "Start"))
+        self.c_stepwidth_checkBox.setToolTip(_translate("MainWindow", "Add the angle between \"\""))
+        self.c_stepwidth_checkBox.setText(_translate("MainWindow", "Step width"))
+        self.c_saveoutput_checkBox.setToolTip(_translate("MainWindow", "Save the output to specified path"))
+        self.c_saveoutput_checkBox.setText(_translate("MainWindow", "Save output:"))
+        self.c_forward_pushButton.setText(_translate("MainWindow", "Forward"))
+        self.c_openfile_pushButton.setToolTip(_translate("MainWindow", "Open file location"))
+        self.c_openfile_pushButton.setText(_translate("MainWindow", "Open file"))
+        self.c_back_pushButton.setText(_translate("MainWindow", "Back"))
+        self.c_playback_label.setToolTip(_translate("MainWindow", "Select the measurements to find"))
+        self.c_playback_label.setText(_translate("MainWindow", "Playback controls"))
+        self.c_playback_pushButton.setToolTip(_translate("MainWindow", "Play/Pause the video"))
+        self.c_playback_pushButton.setText(_translate("MainWindow", "Play/Pause"))
+        self.c_measurements_label.setToolTip(_translate("MainWindow", "Select the measurements to find"))
+        self.c_measurements_label.setText(_translate("MainWindow", "Select measurements:"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.coronal_tab), _translate("MainWindow", "Coronal"))
 
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.metrics_tab), _translate("MainWindow", "Metrics"))
@@ -594,7 +766,7 @@ class GUI(QMainWindow):
         self.pushButton_5.setText(_translate("MainWindow", "Enter"))
         self.label_11.setToolTip(_translate("MainWindow", "Select the plot using the drop down menu"))
         self.label_11.setText(_translate("MainWindow", "Select figure:"))
-        self.lineEdit_5.setText(_translate("MainWindow", "Enter output path here"))
+        self.p_output_lineEdit.setText(_translate("MainWindow", "Enter output path here"))
         self.label_12.setToolTip(_translate("MainWindow", "Save the output at the specified file location"))
         self.label_12.setText(_translate("MainWindow", "Save output:"))
         self.pushButton_16.setToolTip(_translate("MainWindow", "Save the figure"))
@@ -629,6 +801,8 @@ class Worker3(QThread):
 
 
 TIME_LIMIT = 2400000000000000
+
+
 class External(QThread):
     """
     run the progress bar in an external thread class
@@ -674,7 +848,85 @@ class External(QThread):
                 self.mySignal.emit(self.progress)
                 if self.gui.frame_count - self.frame < 1:
                     print("Process complete . . . Please wait.")
+        self.quit()
         print("Timer finished")
+
+
+class Worker(QThread):
+    """
+    Worker thread for processing measurements in the sagittal plane
+    """
+    start_signal = pyqtSignal()
+    finish_signal = pyqtSignal()
+
+    def __init__(self, gui, parent=None):
+        # super(External2, self).__init__()
+        QThread.__init__(self, parent)
+        self.gui = gui
+
+    def run(self):
+        # Remove existing files
+        files = glob.glob("{}\\*.png".format("output_images"))
+        for f in files:
+            os.remove(f)
+        start = 0
+
+        if self.gui.s_distance_checkBox_6 == Qt.Checked:
+            start = 1
+            # self.gui.display.horizontal_foot_angle_overlay()
+            self.gui.display.distance_overlay()
+
+        if self.gui.s_angle_checkBox == Qt.Checked:
+            start = 1
+            self.gui.display.angle_overlay()
+
+        if self.gui.s_legangle_checkBox_4 == Qt.Checked:
+            start = 1
+            self.gui.display.leg_body_angle_overlay()
+
+        if self.gui.s_lknee_angle_checkBox_2 == Qt.Checked:
+            start = 1
+            self.gui.display.left_knee_angle_overlay()
+
+        if self.gui.s_rknee_angle_checkBox_3 == Qt.Checked:
+            start = 1
+            self.gui.display.right_knee_angle_overlay()
+
+        if start == 0:
+            # If no options selected send a signal
+            self.start_signal.emit()
+
+        else:
+            # self.gui.display.display_step_number_overlay()
+            for frame in self.gui.display.frame_list:
+                self.gui.s_progressBar.setStatusTip("Operations complete. Saving all frames... This may take awhile..")
+                bf.save_frame(frame)
+            # noinspection PyBroadException
+            try:
+                self.gui.s_progressBar.setStatusTip("Operations complete. Saving video... This may take awhile..")
+                bf.save_video()
+                try:
+                    self.output_images = os.listdir('output_images/')
+                    # self.gui.s_vid.stop()
+                    image = bf.resize_image('output_images/{}'.format(self.output_images[0]), 409, 311, 1)
+                    img_path = 'display_images/1.png'
+                    pixmap = QPixmap(img_path)
+                    self.gui.s_vid_frame.setPixmap(pixmap)
+                    '''
+                    self.s_vid = QMovie("Output.mp4")
+                    self.s_vid_frame.setMovie(self.s_vid)
+                    self.s_vid.start()
+                    '''
+                except Exception as e:
+                    print("failed to set new movie")
+                    raise e
+                self.finish_signal.emit()
+
+            except Exception as e:
+                print("quiting...")
+                raise e
+            # self.process_complete_messagebox()
+        self.quit()
 
 
 if __name__ == "__main__":

@@ -71,3 +71,4 @@ This command is telling the program to use the directory
 op_images/ for the input images, output1/ for JSON data, and the other two arguments 
 for the coronal plane data. This will also tell the program to set the output video to 20 fps (default 1 fps)
 
+py -3.7-64 main.py -d cam1_output -i cam1_output_images -fps 20
