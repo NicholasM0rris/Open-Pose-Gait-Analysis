@@ -434,8 +434,9 @@ class DisplayData:
                 temp_list.append(frame)
 
             self.frame_list = temp_list
-
+        # TODO: Depreciated under new interace
         """ Save the calculated angles to a text file """
+        '''
         if self.gui.s_angle_checkBox == Qt.Checked:
             print("Saving angles to text file")
             self.save_text(self.angles, "Angle")
@@ -447,6 +448,7 @@ class DisplayData:
             self.gui.angle_label.setText("Max Angle: {}".format(max_angle))
         except:
             pass
+        '''
 
     def leg_body_angle_overlay(self):
         """
@@ -501,11 +503,11 @@ class DisplayData:
                 temp_list.append(frame)
 
             self.frame_list = temp_list
-
+        '''
         if self.gui.leg_angle_body_checkbox == Qt.Checked:
             print("Saving angles to text file")
             self.save_text(self.leg_body_angles, "Angle")
-
+        '''
     def right_knee_angle_overlay(self):
         """
         Creates overlay for angle at the right knee
@@ -558,11 +560,11 @@ class DisplayData:
                 temp_list.append(frame)
 
             self.frame_list = temp_list
-
+        '''
         if self.gui.right_knee_angle_checkbox == Qt.Checked:
             print("Saving angles to text file")
             self.save_text(self.right_knee_angles, "Angle")
-
+        '''
     def left_knee_angle_overlay(self):
         """
         Creates overlay for angle at the left knee
@@ -616,10 +618,11 @@ class DisplayData:
                 temp_list.append(frame)
 
             self.frame_list = temp_list
-
+        '''
         if self.gui.left_knee_angle_checkbox == Qt.Checked:
             print("Saving angles to text file")
             self.save_text(self.left_knee_angles, "Angle")
+        '''
 
     def get_step_width(self, index):
         """
@@ -679,6 +682,7 @@ class DisplayData:
                 self.frame_number += 1
                 temp_list.append(frame)
             self.coronal_frame_list = temp_list
+            '''
         if self.gui.coronal_checkbox == Qt.Checked:
             print("Saving step width to text file")
             self.save_text(self.step_width, "Step width")
@@ -695,7 +699,9 @@ class DisplayData:
         # self.gui.max_dist_label.setText("Max dist: {}".format(max_dist))
         # self.gui.min_dist_label.setText("Min dist: {}".format(min_dist))
         print(min_dist, max_dist)
-        self.gui.average_step_width_label.setText("Average step width: {}".format(sum / len(self.num_step_width)))
+        '''
+
+        # TODO depreciated: self.gui.average_step_width_label.setText("Average step width: {}".format(sum / len(self.num_step_width)))
 
     def foot_angle_overlay(self):
         """
@@ -759,7 +765,7 @@ class DisplayData:
                 temp_list.append(frame)
 
             self.coronal_frame_list = temp_list
-
+        '''
         if self.gui.foot_angle_checkbox == Qt.Checked:
             print("Saving foot angles to text file")
             self.save_text(self.foot_angles, "Foot Angle")
@@ -769,6 +775,7 @@ class DisplayData:
             sum += an_angle[1]
             if an_angle[1] > max_angle:
                 max_angle = an_angle[1]
+        '''
 
         # self.gui.angle_label.setText("Max Angle: {}".format(max_angle))
 
@@ -1538,25 +1545,25 @@ class DisplayData:
         colors = (0, 0, 0)
         area = 10
         if args['treadmill'] == 'True':
-            step_list = self.right_foot_index + self.left_foot_index
-            step_list.sort()
+            self.cadence_step_list = self.right_foot_index + self.left_foot_index
+            self.cadence_step_list.sort()
         else:
-            step_list = self.right_index_list + self.left_index_list
-            step_list.sort()
+            self.cadence_step_list = self.right_index_list + self.left_index_list
+            self.cadence_step_list.sort()
         save_to_file_list = []
-        print(step_list)
-        for idx, count in enumerate(step_list):
+        print(self.cadence_step_list)
+        for idx, count in enumerate(self.cadence_step_list):
             try:
-                if step_list[idx] == step_list[idx + 1]:
-                    del step_list[idx]
+                if self.cadence_step_list[idx] == self.cadence_step_list[idx + 1]:
+                    del self.cadence_step_list[idx]
             except IndexError:
                 pass
 
-        for idx, count in enumerate(step_list):
+        for idx, count in enumerate(self.cadence_step_list):
             if idx == 0:
                 pass
             else:
-                frames_passed = step_list[idx] - step_list[idx - 1]
+                frames_passed = self.cadence_step_list[idx] - self.cadence_step_list[idx - 1]
                 time_passed = frames_passed * (1 / self.fps)
                 cadence = 60 / time_passed
                 self.cadence.append(cadence)
@@ -1568,11 +1575,11 @@ class DisplayData:
         print("Average cadence: ", mean)
         print("std: ", std)
         print("Cadence", self.cadence)
-        print("Step list", step_list)
+        print("Step list", self.cadence_step_list)
 
         ''' Plotting Line plot unfiltered cadence'''
         plt.figure()
-        plt.plot(step_list[1:], self.cadence, linewidth=2, linestyle="-", c="b")
+        plt.plot(self.cadence_step_list[1:], self.cadence, linewidth=2, linestyle="-", c="b")
         plt.title('Unfiltered cadence')
         axes = plt.gca()
         ymin = 0
@@ -1584,9 +1591,17 @@ class DisplayData:
         # plt.gca().invert_yaxis()
         plt.savefig("plots/UnfilteredCadence.png")
 
+        ''' Create a Qt plot for Unfiltered scatter cadence'''
+        self.unfiltered_cadence_scatter_plot = MplCanvas(self, "Unfiltered Cadence Scatter Plot", "Frame number", "Cadence (Steps/min)", width=5, height=4, dpi=100)
+        self.unfiltered_cadence_scatter_plot.axes.scatter(self.cadence_step_list[1:], self.cadence, c=colors, s=area, alpha=0.5)
+
+        ''' Create a Qt plot for Unfiltered line cadence'''
+        self.unfiltered_cadence_line_plot = MplCanvas(self, "Unfiltered Cadence Line Plot", "Frame number", "Cadence (Steps/min)", width=5, height=4, dpi=100)
+        self.unfiltered_cadence_line_plot.axes.plot(self.cadence_step_list[1:], self.cadence, linewidth=2, linestyle="-", c="b")
+
         ''' Plotting Scatter plot unfiltered cadence'''
         plt.figure()
-        plt.scatter(step_list[1:], self.cadence, c=colors, s=area, alpha=0.5)
+        plt.scatter(self.cadence_step_list[1:], self.cadence, c=colors, s=area, alpha=0.5)
         plt.title('Unfiltered cadence')
         axes = plt.gca()
         ymin = 0
@@ -1615,7 +1630,7 @@ class DisplayData:
         # remove the indexes of outliers
         for index in sorted(idx_list, reverse=True):
             del self.cadence[index]
-            del step_list[index]
+            del self.cadence_step_list[index]
 
         mean = np.mean(self.cadence)
         std = np.std(self.cadence)
@@ -1627,7 +1642,7 @@ class DisplayData:
 
         ''' Plotting line plot of filtered cadence'''
         plt.figure()
-        plt.plot(step_list[1:], self.cadence, linewidth=2, linestyle="-", c="b")
+        plt.plot(self.cadence_step_list[1:], self.cadence, linewidth=2, linestyle="-", c="b")
         plt.title('Filtered cadence')
         axes = plt.gca()
         ymin = 0
@@ -1641,7 +1656,7 @@ class DisplayData:
 
         ''' Plotting scatter plot filtered cadence'''
         plt.figure()
-        plt.scatter(step_list[1:], self.cadence, c=colors, s=area, alpha=0.5)
+        plt.scatter(self.cadence_step_list[1:], self.cadence, c=colors, s=area, alpha=0.5)
         plt.title('Filtered cadence')
         axes = plt.gca()
         ymin = 0
@@ -1654,20 +1669,26 @@ class DisplayData:
         plt.savefig("plots/ScatterFilteredCadence.png")
 
         for idx, cadence in enumerate(self.cadence):
-            save_to_file_list.append("Frame number: {} Cadence: {}".format(step_list[idx], cadence))
+            save_to_file_list.append("Frame number: {} Cadence: {}".format(self.cadence_step_list[idx], cadence))
         self.save_text(save_to_file_list, "Cadence")
 
+
         ''' Create a Qt plot for filtered scatter cadence'''
-        self.filtered_cadence_scatter_plot = MplCanvas(self, width=5, height=4, dpi=100)
-        self.filtered_cadence_scatter_plot.axes.scatter(step_list[1:], self.cadence, c=colors, s=area, alpha=0.5)
+        self.filtered_cadence_scatter_plot = MplCanvas(self, "Filtered Cadence Scatter Plot", "Frame number", "Cadence (Steps/min)", width=5, height=4, dpi=100)
+        self.filtered_cadence_scatter_plot.axes.scatter(self.cadence_step_list[1:], self.cadence, c=colors, s=area, alpha=0.5)
 
 
-        # plt.show()
+        ''' Create a Qt plot for filtered line cadence'''
+        self.filtered_cadence_line_plot = MplCanvas(self, "Filtered Cadence Line Plot", "Frame number", "Cadence (Steps/min)", width=5, height=4, dpi=100)
+        self.filtered_cadence_line_plot.axes.plot(self.cadence_step_list[1:], self.cadence, linewidth=2, linestyle="-", c="b")
 
 
 class MplCanvas(FigureCanvasQTAgg):
 
-    def __init__(self, parent=None, width=25, height=25, dpi=500):
+    def __init__(self, parent, title, xlabel, ylabel, width=25, height=25, dpi=500):
         fig = Figure(figsize=(width, height), dpi=dpi)
         self.axes = fig.add_subplot(111)
+        self.axes.set_title(title)
+        self.axes.set_xlabel(xlabel)
+        self.axes.set_ylabel(ylabel)
         super(MplCanvas, self).__init__(fig)

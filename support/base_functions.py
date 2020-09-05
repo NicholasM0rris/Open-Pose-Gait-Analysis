@@ -170,8 +170,11 @@ def save_frame(frame):
     path = "output_images\\{}".format(filename)
     cv2.imwrite(path, frame)
 
+
 def image_to_gif():
     pass
+
+
 def save_frame2(frame):
     """
     Save a frame to output_images
@@ -262,11 +265,16 @@ def save_video():
         print("Index error: No images in output folder")
         sys.exit("Index error: No images in output folder")
     height, width, layers = frame.shape
-    _fourcc = 0x7634706d
+    # For mp4
+    # _fourcc = 0x7634706d
+    # For avi
+    _fourcc = cv2.VideoWriter_fourcc(*'DIVX')
     if args['fps']:
-        video = cv2.VideoWriter("Output.mp4", _fourcc, args['fps'], (width, height))
+        # video = cv2.VideoWriter("Output.mp4", _fourcc, args['fps'], (width, height))
+        video = cv2.VideoWriter("Output.avi", _fourcc, args['fps'], (width, height))
     else:
-        video = cv2.VideoWriter("Output.mp4", _fourcc, 1, (width, height))
+        # video = cv2.VideoWriter("Output.mp4", _fourcc, 1, (width, height))
+        video = cv2.VideoWriter("Output.avi", _fourcc, 1, (width, height))
 
     for image in images:
         video.write(cv2.imread(image))
@@ -346,10 +354,12 @@ def get_y_distance(pt1, pt2):
     distance = abs(pt1[1] - pt2[1])
     return distance
 
+
 def resize_image(image, size_x, size_y, num):
     img = Image.open(image)
     new_img = img.resize((size_x, size_y))
     new_img.save("display_images/{}.png".format(num), "PNG", optimize=True)
+
 
 def main(argv=None):
     ap = argparse.ArgumentParser()

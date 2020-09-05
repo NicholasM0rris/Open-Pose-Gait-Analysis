@@ -9,6 +9,9 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
+from PyQt5.QtMultimediaWidgets import QVideoWidget
+from PyQt5.Qt import QUrl
 
 
 class GUI(QMainWindow):
@@ -25,6 +28,9 @@ class GUI(QMainWindow):
         self.height = 0
         self.pixel_distance = 0
         self.points = []
+
+        self.preview_count = 0
+        self.max_preview_count = None
 
         self.MainWindow = QtWidgets.QMainWindow()
         # ui = GUI(display)
@@ -186,6 +192,24 @@ class GUI(QMainWindow):
         self.s_vid_frame.setObjectName("s_vid_frame")
         pixmap = QPixmap(example_image)
         self.s_vid_frame.setPixmap(pixmap)
+        # This method is very slow!!!!!
+
+        self.video = QVideoWidget(self.saggital_tab)
+        self.video.setGeometry(QtCore.QRect(178, 30, 409, 311))
+        self.video.setObjectName("video")
+
+        self.player = QMediaPlayer(None, QMediaPlayer.VideoSurface)
+        # self.player.stateChanged.connect(self.mediaStateChanged)
+
+        # TODO slider not working as expected: removed for other features
+
+        self.positionSlider = QSlider(orientation=Qt.Horizontal, parent=self.saggital_tab)
+        self.positionSlider.sliderMoved.connect(self.setPosition)
+        self.positionSlider.setRange(0, 30000)
+        self.positionSlider.setGeometry(178, 352, 409, 22)
+        self.test_var = None
+
+        # file = os.path.join(os.path.dirname(__file__), "small.mp4")
         '''
         self.s_vid_frame = QtWidgets.QFrame(self.saggital_tab)
         self.s_vid_frame.setGeometry(QtCore.QRect(178, 30, 409, 311))
@@ -194,6 +218,37 @@ class GUI(QMainWindow):
         self.s_vid_frame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.s_vid_frame.setObjectName("s_vid_frame")
         '''
+
+    @pyqtSlot(int)
+    def setPosition(self, position):
+        print('set position', position, type(position))
+        self.player.setPosition(int(position))
+
+
+    @pyqtSlot('qint64')
+    def positionChanged(self, position):
+        # print('position changed', position, type(position))
+        # print("set duration to ", self.player.duration())
+        # self.positionSlider.setRange(0, self.player.duration())
+        self.positionSlider.setValue(position)
+
+    '''
+        @pyqtSlot('qint64')
+        def durationChanged(self, duration):
+            print('duration changed', duration, type(duration))
+            self.positionSlider.setRange(0, duration)
+
+        @pyqtSlot()
+        def mediaStatusChanged(self):
+            print("set duration to ", self.player.duration())
+            self.positionSlider.setRange(0, self.player.duration())
+
+        @pyqtSlot()
+        def mediaStateChanged(self):
+            print("set duration to ", self.player.duration())
+            self.positionSlider.setRange(0, self.player.duration())
+    '''
+
 
     def init_s_start_button(self):
         self.s_start_pushButton_3 = QtWidgets.QPushButton(self.saggital_tab)
@@ -255,6 +310,17 @@ class GUI(QMainWindow):
         """
         Once processing is complete notify the user
         """
+
+        self.player.setMedia(QMediaContent(QUrl.fromLocalFile('Output.avi')))
+        self.player.setVideoOutput(self.video)
+        #self.player.mediaStatusChanged.connect(self.mediaStatusChanged)
+        self.player.positionChanged.connect(self.positionChanged)
+        #self.player.durationChanged.connect(self.durationChanged)
+        #self.player.stateChanged.connect(self.mediaStateChanged)
+        self.s_play_pushButton_7.clicked.connect(self.s_play_pushButton_function)
+
+        print('dr', self.player.duration())
+        self.player.play()
         print("Process complete ! ")
         msg = QMessageBox.question(self, "The operations have successfully finished ! ",
                                    "Do you want to preview the output video?",
@@ -287,15 +353,18 @@ class GUI(QMainWindow):
         self.s_play_pushButton_7.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.s_play_pushButton_7.setObjectName("s_play_pushButton_7")
 
+
         self.s_back_pushButton_8 = QtWidgets.QPushButton(self.saggital_tab)
         self.s_back_pushButton_8.setGeometry(QtCore.QRect(620, 132, 65, 43))
         self.s_back_pushButton_8.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.s_back_pushButton_8.setObjectName("s_back_pushButton_8")
+        self.s_back_pushButton_8.clicked.connect(self.s_backbutton_function)
 
         self.s_forward_pushButton_9 = QtWidgets.QPushButton(self.saggital_tab)
         self.s_forward_pushButton_9.setGeometry(QtCore.QRect(684, 132, 67, 43))
         self.s_forward_pushButton_9.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.s_forward_pushButton_9.setObjectName("s_forward_pushButton_9")
+        self.s_forward_pushButton_9.clicked.connect(self.s_forwardbutton_function)
 
         self.s_measurements_label_6 = QtWidgets.QLabel(self.saggital_tab)
         self.s_measurements_label_6.setGeometry(QtCore.QRect(4, 32, 169, 16))
@@ -318,6 +387,38 @@ class GUI(QMainWindow):
         self.s_playback_label_7.setFont(font)
         self.s_playback_label_7.setObjectName("s_playback_label_7")
         self.tabWidget.addTab(self.saggital_tab, "")
+
+    def s_play_pushButton_function(self):
+        if self.player.state() == QMediaPlayer.PlayingState:
+            self.player.pause()
+        else:
+            self.player.play()
+
+    def s_backbutton_function(self):
+        if self.max_preview_count:
+            if self.preview_count - 1 < 1:
+                self.preview_count = self.max_preview_count
+            else:
+                self.preview_count -= 1
+            img_path = 'display_images/{}.png'.format(self.preview_count)
+            pixmap = QPixmap(img_path)
+            self.s_vid_frame.setPixmap(pixmap)
+
+        else:
+            pass
+
+    def s_forwardbutton_function(self):
+        if self.max_preview_count:
+            if self.preview_count + 1 > self.max_preview_count:
+                self.preview_count = 1
+            else:
+                self.preview_count += 1
+            img_path = 'display_images/{}.png'.format(self.preview_count)
+            pixmap = QPixmap(img_path)
+            self.s_vid_frame.setPixmap(pixmap)
+
+        else:
+            pass
 
     def s_init_checkboxes(self):
         self.s_angle_checkBox = QtWidgets.QCheckBox(self.saggital_tab)
@@ -391,10 +492,10 @@ class GUI(QMainWindow):
 
     def left_knee_angle_clickbox_function(self, state):
         if state == Qt.Checked:
-            self.lknee_angle_checkBox_2 = Qt.Checked
+            self.s_lknee_angle_checkBox_2 = Qt.Checked
             print('left knee Angle Checked')
         else:
-            self.lknee_angle_checkBox_2 = Qt.Unchecked
+            self.s_lknee_angle_checkBox_2 = Qt.Unchecked
             print('left knee Angle Unchecked')
 
     def s_init_progressbar(self):
@@ -407,11 +508,13 @@ class GUI(QMainWindow):
 
     @pyqtSlot(int)
     def s_onCountChanged(self, value):
+
         self.s_progressBar.setValue(value)
 
     def s_init_save_output(self):
         self.s_saveoutput_checkBox_5 = QtWidgets.QCheckBox(self.saggital_tab)
         self.s_saveoutput_checkBox_5.setGeometry(QtCore.QRect(476, 398, 149, 35))
+        self.s_saveoutput_checkBox_5.stateChanged.connect(self.s_saveoutput_clickbox_function)
         font = QtGui.QFont()
         font.setPointSize(12)
         self.s_saveoutput_checkBox_5.setFont(font)
@@ -423,6 +526,14 @@ class GUI(QMainWindow):
         self.s_saveoutput_pushButton_10.setGeometry(QtCore.QRect(712, 436, 77, 29))
         self.s_saveoutput_pushButton_10.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.s_saveoutput_pushButton_10.setObjectName("s_saveoutput_pushButton_10")
+
+    def s_saveoutput_clickbox_function(self, state):
+        if state == Qt.Checked:
+            self.s_saveoutput_checkBox_5 = Qt.Checked
+            print('S save output Checked')
+        else:
+            self.s_saveoutput_checkBox_5 = Qt.Unchecked
+            print('S save output Unchecked')
 
     def set_dropdown1(self, text):
         self.display.keypoint1 = text
@@ -595,15 +706,60 @@ class GUI(QMainWindow):
 
     def plot_frame_init(self):
 
-        self.filtered_cadence_scatter_toolbar = NavigationToolbar(self.display.filtered_cadence_scatter_plot, self)
-        self.plot_layout = QtWidgets.QVBoxLayout()
-        self.plot_layout.addWidget(self.filtered_cadence_scatter_toolbar)
-        self.plot_layout.addWidget(self.display.filtered_cadence_scatter_plot)
+        ''' Filtered cadence scatter plot '''
+        self.filtered_cadence_scatter_plot = self.display.filtered_cadence_scatter_plot
+        self.filtered_cadence_scatter_toolbar = NavigationToolbar(self.filtered_cadence_scatter_plot, self)
+        self.filtered_cadence_scatter_plot_layout = QtWidgets.QVBoxLayout()
+        self.filtered_cadence_scatter_plot_layout.addWidget(self.filtered_cadence_scatter_toolbar)
+        self.filtered_cadence_scatter_plot_layout.addWidget(self.display.filtered_cadence_scatter_plot)
 
-        self.plot_widget = QtWidgets.QWidget(self.plots_tab)
-        self.plot_widget.setLayout(self.plot_layout)
-        self.plot_widget.setGeometry(QtCore.QRect(90, 10, 619, 403))
-        self.plot_widget.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
+        self.filtered_cadence_scatter_plot_widget = QtWidgets.QWidget(self.plots_tab)
+        self.filtered_cadence_scatter_plot_widget.setLayout(self.filtered_cadence_scatter_plot_layout)
+        self.filtered_cadence_scatter_plot_widget.setGeometry(QtCore.QRect(90, 10, 619, 403))
+        self.filtered_cadence_scatter_plot_widget.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
+
+        ''' Filtered cadence line plot '''
+        self.filtered_cadence_line_toolbar = NavigationToolbar(self.display.filtered_cadence_line_plot, self)
+        self.filtered_cadence_line_plot_layout = QtWidgets.QVBoxLayout()
+        self.filtered_cadence_line_plot_layout.addWidget(self.filtered_cadence_line_toolbar)
+        self.filtered_cadence_line_plot_layout.addWidget(self.display.filtered_cadence_line_plot)
+
+        self.filtered_cadence_line_plot_widget = QtWidgets.QWidget(self.plots_tab)
+        self.filtered_cadence_line_plot_widget.setLayout(self.filtered_cadence_line_plot_layout)
+        self.filtered_cadence_line_plot_widget.setGeometry(QtCore.QRect(90, 10, 619, 403))
+        #self.filtered_cadence_line_plot_widget.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
+
+        ''' Unfiltered cadence line plot '''
+        self.unfiltered_cadence_line_toolbar = NavigationToolbar(self.display.unfiltered_cadence_line_plot, self)
+        self.unfiltered_cadence_line_plot_layout = QtWidgets.QVBoxLayout()
+        self.unfiltered_cadence_line_plot_layout.addWidget(self.unfiltered_cadence_line_toolbar)
+        self.unfiltered_cadence_line_plot_layout.addWidget(self.display.unfiltered_cadence_line_plot)
+
+        self.unfiltered_cadence_line_plot_widget = QtWidgets.QWidget(self.plots_tab)
+        self.unfiltered_cadence_line_plot_widget.setLayout(self.unfiltered_cadence_line_plot_layout)
+        self.unfiltered_cadence_line_plot_widget.setGeometry(QtCore.QRect(90, 10, 619, 403))
+        #self.unfiltered_cadence_line_plot_widget.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
+
+        ''' Unfiltered cadence cadence plot '''
+        self.unfiltered_cadence_scatter_plot = self.display.unfiltered_cadence_scatter_plot
+        self.unfiltered_cadence_scatter_toolbar = NavigationToolbar(self.unfiltered_cadence_scatter_plot, self)
+        self.unfiltered_cadence_scatter_plot_layout = QtWidgets.QVBoxLayout()
+        self.unfiltered_cadence_scatter_plot_layout.addWidget(self.unfiltered_cadence_scatter_toolbar)
+        self.unfiltered_cadence_scatter_plot_layout.addWidget(self.display.unfiltered_cadence_scatter_plot)
+
+        self.unfiltered_cadence_scatter_plot_widget = QtWidgets.QWidget(self.plots_tab)
+        self.unfiltered_cadence_scatter_plot_widget.setLayout(self.unfiltered_cadence_scatter_plot_layout)
+        self.unfiltered_cadence_scatter_plot_widget.setGeometry(QtCore.QRect(90, 10, 619, 403))
+        self.unfiltered_cadence_scatter_plot_widget.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
+
+
+
+        ''' Add the plots to a plot stack '''
+        self.plot_stack = QStackedLayout()
+        self.plot_stack.addWidget(self.filtered_cadence_scatter_plot_widget)  # Index 0
+        self.plot_stack.addWidget(self.filtered_cadence_line_plot_widget)  # Index 1
+        self.plot_stack.addWidget(self.unfiltered_cadence_line_plot_widget)  # Index 2
+        self.plot_stack.addWidget(self.unfiltered_cadence_scatter_plot_widget)  # Index 3
         '''
         
         self.frame_3 = QtWidgets.QFrame(self.plots_tab)
@@ -620,12 +776,21 @@ class GUI(QMainWindow):
         print("{} selected".format(text))
         if text == "Filtered Cadence Scatter Plot":
             print("Setting {}".format(text))
-            self.filtered_cadence_scatter_toolbar = NavigationToolbar(self.display.filtered_cadence_scatter_plot, self)
-            self.plot_layout = QtWidgets.QVBoxLayout()
-            self.plot_layout.addWidget(self.filtered_cadence_scatter_toolbar)
-            self.plot_layout.addWidget(self.display.filtered_cadence_scatter_plot)
-            # self.plot_widget.setLayout(layout)
-            self.plot_widget.update()
+            self.plot_stack.setCurrentIndex(0)
+
+
+        elif text == "Filtered Cadence Line Plot":
+            print("Setting {}".format(text))
+            self.plot_stack.setCurrentIndex(1)
+
+        elif text == "Unfiltered Cadence Line Plot":
+            print("Setting {}".format(text))
+            self.plot_stack.setCurrentIndex(2)
+
+        elif text == "Unfiltered Cadence Scatter Plot":
+            print("Setting {}".format(text))
+            self.plot_stack.setCurrentIndex(3)
+
 
 
     def plot_dropdown_init(self):
@@ -635,6 +800,9 @@ class GUI(QMainWindow):
         self.plot_dropdown.setObjectName("plot_dropdown")
 
         self.plot_dropdown.addItem("Filtered Cadence Scatter Plot")
+        self.plot_dropdown.addItem("Filtered Cadence Line Plot")
+        self.plot_dropdown.addItem("Unfiltered Cadence Line Plot")
+        self.plot_dropdown.addItem("Unfiltered Cadence Scatter Plot")
 
         self.plot_dropdown.activated[str].connect(self.set_plot_dropdown)
 
@@ -848,6 +1016,7 @@ class External(QThread):
                 self.mySignal.emit(self.progress)
                 if self.gui.frame_count - self.frame < 1:
                     print("Process complete . . . Please wait.")
+                    self.quit()
         self.quit()
         print("Timer finished")
 
@@ -869,6 +1038,9 @@ class Worker(QThread):
         files = glob.glob("{}\\*.png".format("output_images"))
         for f in files:
             os.remove(f)
+        files = glob.glob("{}\\*.png".format("display_images"))
+        for f in files:
+            os.remove(f)
         start = 0
 
         if self.gui.s_distance_checkBox_6 == Qt.Checked:
@@ -887,6 +1059,8 @@ class Worker(QThread):
         if self.gui.s_lknee_angle_checkBox_2 == Qt.Checked:
             start = 1
             self.gui.display.left_knee_angle_overlay()
+        else:
+            print("err")
 
         if self.gui.s_rknee_angle_checkBox_3 == Qt.Checked:
             start = 1
@@ -898,25 +1072,43 @@ class Worker(QThread):
 
         else:
             # self.gui.display.display_step_number_overlay()
-            for frame in self.gui.display.frame_list:
-                self.gui.s_progressBar.setStatusTip("Operations complete. Saving all frames... This may take awhile..")
-                bf.save_frame(frame)
+            if self.gui.s_saveoutput_checkBox_5 == Qt.Checked:
+                for frame in self.gui.display.frame_list:
+                    self.gui.s_progressBar.setStatusTip("Operations complete. Saving all frames... This may take awhile..")
+                    bf.save_frame(frame)
+            else:
+                print("Option to save frames not selected, moving on. . . ")
             # noinspection PyBroadException
             try:
-                self.gui.s_progressBar.setStatusTip("Operations complete. Saving video... This may take awhile..")
-                bf.save_video()
+                if self.gui.s_saveoutput_checkBox_5 == Qt.Checked:
+                    self.gui.s_progressBar.setStatusTip("Operations complete. Saving video... This may take awhile..")
+                    bf.save_video()
+                else:
+                    print("Option to save video not selected, moving on. . . ")
                 try:
-                    self.output_images = os.listdir('output_images/')
+                    # self.output_images = os.listdir('output_images/')
                     # self.gui.s_vid.stop()
-                    image = bf.resize_image('output_images/{}'.format(self.output_images[0]), 409, 311, 1)
+                    # THIS METHOD IS VERY SLOW !! !!! !!
+                    '''
+                    count = 1
+                    self.gui.max_preview_count = len(self.output_images)
+                    for path in self.output_images:
+                        bf.resize_image('output_images/{}'.format(self.output_images[count]), 409, 311, count)
+                        count += 1
+
                     img_path = 'display_images/1.png'
                     pixmap = QPixmap(img_path)
                     self.gui.s_vid_frame.setPixmap(pixmap)
+                    '''
                     '''
                     self.s_vid = QMovie("Output.mp4")
                     self.s_vid_frame.setMovie(self.s_vid)
                     self.s_vid.start()
                     '''
+                    print("Trying to add video preview")
+                    print("Trying toset vid out")
+
+
                 except Exception as e:
                     print("failed to set new movie")
                     raise e
