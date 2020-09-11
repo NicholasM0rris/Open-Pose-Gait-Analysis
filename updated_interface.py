@@ -200,7 +200,6 @@ class GUI(QMainWindow):
         self.video.setGeometry(QtCore.QRect(178, 30, 409, 311))
         self.video.setObjectName("video")
 
-
         self.player = QMediaPlayer(None, QMediaPlayer.VideoSurface)
         self.player.positionChanged.connect(self.positionChanged)
         # self.player.stateChanged.connect(self.mediaStateChanged)
@@ -321,7 +320,6 @@ class GUI(QMainWindow):
         # self.player.durationChanged.connect(self.durationChanged)
         # self.player.stateChanged.connect(self.mediaStateChanged)
 
-
         print('dr', self.player.duration())
         self.player.play()
         print("Process complete ! ")
@@ -351,13 +349,13 @@ class GUI(QMainWindow):
         Once processing is complete notify the user
         """
 
-        self.coronal_player.setMedia(QMediaContent(QUrl.fromLocalFile('{}/Output.avi'.format(self.s_video_output_path))))
-        self.coronal_player.setVideoOutput(self.video)
+        self.coronal_player.setMedia(
+            QMediaContent(QUrl.fromLocalFile('{}/Output.avi'.format(self.c_video_output_path))))
+        self.coronal_player.setVideoOutput(self.coronal_video)
         # self.player.mediaStatusChanged.connect(self.mediaStatusChanged)
 
         # self.player.durationChanged.connect(self.durationChanged)
         # self.player.stateChanged.connect(self.mediaStateChanged)
-
 
         self.coronal_player.play()
         print("Process complete ! ")
@@ -415,7 +413,6 @@ class GUI(QMainWindow):
         self.s_forward_pushButton_9.setObjectName("s_forward_pushButton_9")
         self.s_forward_pushButton_9.clicked.connect(self.s_forwardbutton_video_function)
 
-
         self.s_measurements_label_6 = QtWidgets.QLabel(self.saggital_tab)
         self.s_measurements_label_6.setGeometry(QtCore.QRect(4, 32, 169, 16))
         font = QtGui.QFont()
@@ -441,13 +438,12 @@ class GUI(QMainWindow):
     def s_backbutton_video_function(self, position):
         # print('set position', position, type(position))
 
-        self.player.setPosition(int(self.player.position()-3000))
-
+        self.player.setPosition(int(self.player.position() - 3000))
 
     def s_forwardbutton_video_function(self, position):
         # print('set position', position, type(position))
         # print(self.player.position(), self.player.position)
-        self.player.setPosition(int(self.player.position()+3000))
+        self.player.setPosition(int(self.player.position() + 3000))
 
     def s_play_pushButton_function(self):
         if self.player.state() == QMediaPlayer.PlayingState:
@@ -596,7 +592,6 @@ class GUI(QMainWindow):
         self.s_video_output_path = str(dir)
         self.s_saveoutput_lineEdit_3.setText(self.s_video_output_path)
 
-
     def s_saveoutput_clickbox_function(self, state):
         if state == Qt.Checked:
             self.s_saveoutput_checkBox_5 = Qt.Checked
@@ -665,6 +660,8 @@ class GUI(QMainWindow):
         self.coronal_tab = QtWidgets.QWidget()
         self.coronal_tab.setObjectName("coronal_tab")
 
+        self.s_video_output_path = ""
+
         self.c_save_output_init()
         self.c_progressbar_init()
         self.c_startbutton_init()
@@ -677,22 +674,27 @@ class GUI(QMainWindow):
         self.c_saveoutput_pushButton = QtWidgets.QPushButton(self.coronal_tab)
         self.c_saveoutput_pushButton.setGeometry(QtCore.QRect(712, 436, 77, 29))
         self.c_saveoutput_pushButton.setObjectName("c_saveoutput_pushButton")
+        self.c_saveoutput_pushButton.clicked.connect(self.coronal_open_output_directory)
 
         self.c_output_lineEdit = QtWidgets.QLineEdit(self.coronal_tab)
         self.c_output_lineEdit.setGeometry(QtCore.QRect(476, 436, 233, 29))
         self.c_output_lineEdit.setObjectName("c_output_lineEdit")
 
+    def coronal_open_output_directory(self):
+
+        dir = QFileDialog.getExistingDirectory(self, 'Select output directory')
+        self.c_video_output_path = str(dir)
+        self.c_output_lineEdit.setText(self.c_video_output_path)
 
     def c_backbutton_video_function(self, position):
         # print('set position', position, type(position))
 
-        self.coronal_player.setPosition(int(self.coronal_player.position()-3000))
-
+        self.coronal_player.setPosition(int(self.coronal_player.position() - 3000))
 
     def c_forwardbutton_video_function(self, position):
         # print('set position', position, type(position))
         # print(self.player.position(), self.player.position)
-        self.coronal_player.setPosition(int(self.coronal_player.position()+3000))
+        self.coronal_player.setPosition(int(self.coronal_player.position() + 3000))
 
     def c_play_pushButton_function(self):
         if self.coronal_player.state() == QMediaPlayer.PlayingState:
@@ -700,7 +702,6 @@ class GUI(QMainWindow):
         else:
             self.coronal_player.play()
             self.c_vid_frame.hide()
-
 
     def c_progressbar_init(self):
         self.progressBar_2 = QtWidgets.QProgressBar(self.coronal_tab)
@@ -713,7 +714,44 @@ class GUI(QMainWindow):
         self.c_start_pushButton.setGeometry(QtCore.QRect(680, 478, 89, 41))
         self.c_start_pushButton.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.c_start_pushButton.setObjectName("c_start_pushButton")
+        self.c_start_pushButton.clicked.connect(self.coronal_startbuttonclick)
+        self.c_start_pushButton.clicked.connect(self.coronal_start_button_functions)
 
+    @pyqtSlot(int)
+    def c_onCountChanged(self, value):
+
+        self.progressBar_2.setValue(value)
+
+    def coronal_startbuttonclick(self):
+        """
+        sagittal plane assign progress bar thread
+        :return:
+        """
+
+        if self.c_stepwidth_checkBox == Qt.Checked:
+            self.num_operations += 1
+        if self.c_footangle_checkBox == Qt.Checked:
+            self.num_operations += 1
+        if not self.calc:
+            self.calc = CoronalExternal(self)
+            self.calc.mySignal.connect(self.c_onCountChanged)
+            self.calc.start()
+        else:
+            print("set counter to 0")
+            self.calc.progress = 0
+            self.calc.count = 0
+
+    @pyqtSlot()
+    def coronal_start_button_functions(self):
+        """
+        Assign worker threads for processing functions in the sagittal plane
+        """
+        # Remove any current images in output file
+
+        self.coronal_worker_thread = CoronalWorker(self)
+        self.coronal_worker_thread.finish_signal.connect(self.coronal_process_complete_messagebox)
+        self.coronal_worker_thread.start()
+        self.coronal_worker_thread.start_signal.connect(self.no_option_messagebox)
 
     def c_stepwidth_clickbox(self, state):
         if state == Qt.Checked:
@@ -741,7 +779,7 @@ class GUI(QMainWindow):
         self.c_footangle_checkBox.setFont(font)
         self.c_footangle_checkBox.setIconSize(QtCore.QSize(16, 16))
         self.c_footangle_checkBox.setObjectName("c_footangle_checkBox")
-        self.c_footangle_checkBox.clicked.connect(self.c_foot_angle_clickbox)
+        self.c_footangle_checkBox.stateChanged.connect(self.c_foot_angle_clickbox)
 
         self.c_stepwidth_checkBox = QtWidgets.QCheckBox(self.coronal_tab)
         self.c_stepwidth_checkBox.setGeometry(QtCore.QRect(22, 366, 167, 53))
@@ -752,10 +790,10 @@ class GUI(QMainWindow):
         self.c_stepwidth_checkBox.setStatusTip("")
         self.c_stepwidth_checkBox.setWhatsThis("")
         self.c_stepwidth_checkBox.setObjectName("c_stepwidth_checkBox")
-        self.c_stepwidth_checkBox.clicked.connect(self.c_stepwidth_clickbox)
+        self.c_stepwidth_checkBox.stateChanged.connect(self.c_stepwidth_clickbox)
 
         self.c_measurements_label = QtWidgets.QLabel(self.coronal_tab)
-        self.c_measurements_label.setGeometry(QtCore.QRect(16, 350, 169, 16))
+        self.c_measurements_label.setGeometry(QtCore.QRect(5, 350, 169, 16))
         font = QtGui.QFont()
         font.setFamily("MS Shell Dlg 2")
         font.setPointSize(13)
@@ -800,7 +838,7 @@ class GUI(QMainWindow):
         font.setPointSize(12)
         self.c_saveoutput_checkBox.setFont(font)
         self.c_saveoutput_checkBox.setObjectName("c_saveoutput_checkBox")
-        self.c_saveoutput_checkBox.clicked.connect(self.c_saveoutput_clickbox_function)
+        self.c_saveoutput_checkBox.stateChanged.connect(self.c_saveoutput_clickbox_function)
 
         self.c_forward_pushButton = QtWidgets.QPushButton(self.coronal_tab)
         self.c_forward_pushButton.setGeometry(QtCore.QRect(684, 132, 67, 43))
@@ -819,7 +857,6 @@ class GUI(QMainWindow):
         self.c_back_pushButton.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.c_back_pushButton.setObjectName("c_back_pushButton")
         self.c_back_pushButton.clicked.connect(self.c_backbutton_video_function)
-
 
         self.c_playback_label = QtWidgets.QLabel(self.coronal_tab)
         self.c_playback_label.setGeometry(QtCore.QRect(616, 32, 169, 16))
@@ -1054,7 +1091,7 @@ class GUI(QMainWindow):
         self.s_progressBar.setToolTip(_translate("MainWindow", "<html><head/><body><p>statustooltip</p></body></html>"))
         self.s_saveoutput_checkBox_5.setToolTip(_translate("MainWindow", "Save the output to specified path"))
         self.s_saveoutput_checkBox_5.setText(_translate("MainWindow", "Save output:"))
-        self.s_saveoutput_lineEdit_3.setText(_translate("MainWindow", "output_video"))
+        self.s_saveoutput_lineEdit_3.setText(_translate("MainWindow", ""))
         self.s_dp1_label_4.setToolTip(_translate("MainWindow", "Select the first point to measure distance between"))
         self.s_dp1_label_4.setText(_translate("MainWindow", "Distance point 1:"))
         self.s_dp2_label_5.setToolTip(_translate("MainWindow", "Select the second point to measure distance between"))
@@ -1068,10 +1105,10 @@ class GUI(QMainWindow):
         self.s_playback_label_7.setText(_translate("MainWindow", "Playback controls"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.saggital_tab), _translate("MainWindow", "Sagittal"))
 
-        self.c_saveoutput_pushButton.setText(_translate("MainWindow", "Enter"))
+        self.c_saveoutput_pushButton.setText(_translate("MainWindow", "Browse"))
         self.c_footangle_checkBox.setToolTip(_translate("MainWindow", "Add the angle between \"\""))
         self.c_footangle_checkBox.setText(_translate("MainWindow", "Foot angle"))
-        self.c_output_lineEdit.setText(_translate("MainWindow", "output_video"))
+        self.c_output_lineEdit.setText(_translate("MainWindow", ""))
         self.progressBar_2.setToolTip(_translate("MainWindow", "<html><head/><body><p>statustooltip</p></body></html>"))
         self.c_start_pushButton.setToolTip(_translate("MainWindow", "Start the operations!"))
         self.c_start_pushButton.setText(_translate("MainWindow", "Start"))
@@ -1131,6 +1168,56 @@ class Worker3(QThread):
 
 
 TIME_LIMIT = 2400000000000000
+
+
+class CoronalExternal(QThread):
+    """
+    run the progress bar in an external thread class
+    """
+    mySignal = pyqtSignal(int)
+
+    def __init__(self, gui):
+        super(CoronalExternal, self).__init__()
+        self.gui = gui
+        # Set number operations to one to avoid divide by 0 error
+        if self.gui.num_operations == 0:
+            num_operations = 1
+        else:
+            num_operations = self.gui.num_operations
+        # Get number of files to be operated on
+        self.num_files = len(self.gui.display.data.data_files) * num_operations
+        self.progress = 0
+        self.frame = 1
+        self.count = 0
+
+    def run(self):
+        try:
+            # Get progress to add for each number of file
+            add = 100 / self.num_files
+        except ZeroDivisionError:
+            print("ZeroDivisionError")
+            sys.exit()
+        print("ADD", add)
+        # While not timed out
+        while self.count < TIME_LIMIT:
+            # Add count
+            self.count += 1
+            # If the frame number is different to processed frame number
+            if self.frame != self.gui.display.frame_number:
+                print(
+                    "Saving to video . . . Progress ({}, {}) / {} frames. {}% complete. {} Frames remaining . . .".format(
+                        self.frame, self.gui.display.frame_number, self.gui.frame_count, self.progress,
+                        self.gui.frame_count - self.frame))
+                # Increase the progress bar and set to new frame
+                self.frame = self.gui.display.frame_number
+                self.progress += add
+                # self.gui.onCountChanged(self.progress)
+                self.mySignal.emit(self.progress)
+                if self.gui.frame_count - self.frame < 1:
+                    print("Process complete . . . Please wait.")
+                    self.quit()
+        self.quit()
+        print("Timer finished")
 
 
 class External(QThread):
@@ -1221,8 +1308,6 @@ class Worker(QThread):
         if self.gui.s_lknee_angle_checkBox_2 == Qt.Checked:
             start = 1
             self.gui.display.left_knee_angle_overlay()
-        else:
-            print("err")
 
         if self.gui.s_rknee_angle_checkBox_3 == Qt.Checked:
             start = 1
@@ -1275,6 +1360,68 @@ class Worker(QThread):
                 except Exception as e:
                     print("failed to set new movie")
                     raise e
+                self.finish_signal.emit()
+
+            except Exception as e:
+                print("quiting...")
+                raise e
+            # self.process_complete_messagebox()
+        self.quit()
+
+
+class CoronalWorker(QThread):
+    """
+    Worker thread for processing measurements in the sagittal plane
+    """
+    start_signal = pyqtSignal()
+    finish_signal = pyqtSignal()
+
+    def __init__(self, gui, parent=None):
+        # super(External2, self).__init__()
+        QThread.__init__(self, parent)
+        self.gui = gui
+
+    def run(self):
+        # Remove existing files
+        files = glob.glob("{}\\*.png".format("output_coronal_images"))
+        for f in files:
+            os.remove(f)
+        files = glob.glob("{}\\*.png".format("display_images"))
+        for f in files:
+            os.remove(f)
+        start = 0
+
+        if self.gui.c_stepwidth_checkBox == Qt.Checked:
+            print("pass")
+            start = 1
+            self.gui.display.display_step_width()
+
+        if self.gui.c_footangle_checkBox == Qt.Checked:
+            start = 1
+            self.gui.display.foot_angle_overlay()
+
+        if start == 0:
+            print("no pass")
+            # If no options selected send a signal
+            self.start_signal.emit()
+
+        else:
+
+            if self.gui.c_saveoutput_checkBox == Qt.Checked:
+                for frame in self.gui.display.coronal_frame_list:
+                    self.gui.progressBar_2.setStatusTip(
+                        "Operations complete. Saving all frames... This may take awhile..")
+                    bf.coronal_save_frame(frame)
+            else:
+                print("Option to save frames not selected, moving on. . . ")
+            # noinspection PyBroadException
+            try:
+                if self.gui.c_saveoutput_checkBox == Qt.Checked:
+                    self.gui.progressBar_2.setStatusTip("Operations complete. Saving video... This may take awhile..")
+                    bf.coronal_save_video(self.gui.c_video_output_path)
+                else:
+                    print("Option to save video not selected, moving on. . . ")
+
                 self.finish_signal.emit()
 
             except Exception as e:

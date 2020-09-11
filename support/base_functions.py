@@ -175,7 +175,7 @@ def image_to_gif():
     pass
 
 
-def save_frame2(frame):
+def coronal_save_frame(frame):
     """
     Save a frame to output_images
     :param frame: Frame to save
@@ -278,7 +278,7 @@ def save_video(path=None):
         video = cv2.VideoWriter("{}Output.avi".format(output_path), _fourcc, args['fps'], (width, height))
     else:
         # video = cv2.VideoWriter("Output.mp4", _fourcc, 1, (width, height))
-        video = cv2.VideoWriter("{}Output.avi.".format(output_path), _fourcc, 1, (width, height))
+        video = cv2.VideoWriter("{}Output.avi".format(output_path), _fourcc, 1, (width, height))
 
     for image in images:
         video.write(cv2.imread(image))
@@ -286,10 +286,14 @@ def save_video(path=None):
     video.release()
 
 
-def save_video2():
+def coronal_save_video(path):
     """
     Saves a video of processed image output to coronal processed_video directory
     """
+    if not path:
+        output_path = ""
+    else:
+        output_path = path + "/"
     images = []
     for filename in glob.glob("{}\\*.png".format("output_coronal_images")):
         images.append(filename)
@@ -300,10 +304,11 @@ def save_video2():
         sys.exit("Index error: No images in output folder")
     height, width, layers = frame.shape
     # video = cv2.VideoWriter("{}/Coronal_Output.avi".format("processed_video"), 0, 1, (width, height))
+    _fourcc = cv2.VideoWriter_fourcc(*'DIVX')
     if args['fps']:
-        video = cv2.VideoWriter("Coronal_Output.avi", 0, args['fps'], (width, height))
+        video = cv2.VideoWriter("{}C_output.avi".format(output_path), _fourcc, args['fps'], (width, height))
     else:
-        video = cv2.VideoWriter("Coronal_Output.avi", 0, 1, (width, height))
+        video = cv2.VideoWriter("{}C_output.avi".format(output_path), _fourcc, 1, (width, height))
 
     for image in images:
         video.write(cv2.imread(image))
