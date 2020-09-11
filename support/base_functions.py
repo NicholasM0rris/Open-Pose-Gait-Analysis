@@ -252,10 +252,14 @@ def distance_overlay(display, point1, point2):
     save_video()
 
 
-def save_video():
+def save_video(path=None):
     """
     Saves a video of processed image output to processed_video directory
     """
+    if not path:
+        output_path = ""
+    else:
+        output_path = path + "/"
     images = []
     for filename in glob.glob("{}\\*.png".format("output_images")):
         images.append(filename)
@@ -271,10 +275,10 @@ def save_video():
     _fourcc = cv2.VideoWriter_fourcc(*'DIVX')
     if args['fps']:
         # video = cv2.VideoWriter("Output.mp4", _fourcc, args['fps'], (width, height))
-        video = cv2.VideoWriter("Output.avi", _fourcc, args['fps'], (width, height))
+        video = cv2.VideoWriter("{}Output.avi".format(output_path), _fourcc, args['fps'], (width, height))
     else:
         # video = cv2.VideoWriter("Output.mp4", _fourcc, 1, (width, height))
-        video = cv2.VideoWriter("Output.avi", _fourcc, 1, (width, height))
+        video = cv2.VideoWriter("{}Output.avi.".format(output_path), _fourcc, 1, (width, height))
 
     for image in images:
         video.write(cv2.imread(image))
