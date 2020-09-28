@@ -14,6 +14,7 @@ from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.Qt import QUrl
 
 
+
 class GUI(QMainWindow):
 
     def __init__(self, display):
@@ -102,7 +103,7 @@ class GUI(QMainWindow):
             self.height = int(self.height_lineEdit.text())
             if self.display.image_path:
                 self.calibrate_thread = Worker3(self)
-                self.calibrate_thread.start()
+                # self.calibrate_thread.start()
             else:
                 print("Select an image!")
         except ValueError:
@@ -276,11 +277,11 @@ class GUI(QMainWindow):
         if self.s_rknee_angle_checkBox_3 == Qt.Checked:
             self.num_operations += 1
         if not self.calc:
-            '''
+
             self.calc = External(self)
             self.calc.mySignal.connect(self.s_onCountChanged)
-            self.calc.start()
-            '''
+            # self.calc.start()
+
         else:
             print("set counter to 0")
             self.calc.progress = 0
@@ -295,7 +296,7 @@ class GUI(QMainWindow):
 
         self.worker_thread = Worker(self)
         self.worker_thread.finish_signal.connect(self.process_complete_messagebox)
-        self.worker_thread.start()
+        # self.worker_thread.start()
         self.worker_thread.start_signal.connect(self.no_option_messagebox)
 
     @pyqtSlot()
@@ -362,10 +363,25 @@ class GUI(QMainWindow):
         """
         Once processing is complete notify the user
         """
+        if self.c_video_output_path == "":
+            try:
+                print("err1")
+                self.coronal_player.setMedia(
+                    QMediaContent(QUrl.fromLocalFile('Output.avi')))
+                self.coronal_player.setVideoOutput(self.coronal_video)
+            except Exception as e:
+                raise e
 
-        self.coronal_player.setMedia(
-            QMediaContent(QUrl.fromLocalFile('{}/Output.avi'.format(self.c_video_output_path))))
-        self.coronal_player.setVideoOutput(self.coronal_video)
+        else:
+            try:
+                print("eer2")
+                self.coronal_player.setMedia(
+                    QMediaContent(QUrl.fromLocalFile('{}/Output.avi'.format(self.c_video_output_path))))
+                self.coronal_player.setVideoOutput(self.coronal_video)
+            # DirectShowPlayerService error (The video doesn't exist so just pass)
+            except Exception as e:
+                pass
+
         # self.player.mediaStatusChanged.connect(self.mediaStatusChanged)
 
         # self.player.durationChanged.connect(self.durationChanged)
@@ -675,6 +691,7 @@ class GUI(QMainWindow):
         self.coronal_tab.setObjectName("coronal_tab")
 
         self.s_video_output_path = ""
+        self.c_video_output_path = ""
 
         self.c_save_output_init()
         self.c_progressbar_init()
@@ -749,7 +766,7 @@ class GUI(QMainWindow):
         if not self.calc:
             self.calc = CoronalExternal(self)
             self.calc.mySignal.connect(self.c_onCountChanged)
-            self.calc.start()
+            # self.calc.start()
         else:
             print("set counter to 0")
             self.calc.progress = 0
@@ -764,7 +781,7 @@ class GUI(QMainWindow):
 
         self.coronal_worker_thread = CoronalWorker(self)
         self.coronal_worker_thread.finish_signal.connect(self.coronal_process_complete_messagebox)
-        self.coronal_worker_thread.start()
+        # self.coronal_worker_thread.start()
         self.coronal_worker_thread.start_signal.connect(self.no_option_messagebox)
 
     def c_stepwidth_clickbox(self, state):
@@ -1166,6 +1183,7 @@ class Worker3(QThread):
         # super(External2, self).__init__()
         QThread.__init__(self, parent)
         self.gui = gui
+        self.start()
 
     def run(self):
         # Remove any current images in output file
@@ -1203,6 +1221,7 @@ class CoronalExternal(QThread):
         self.progress = 0
         self.frame = 1
         self.count = 0
+        self.start()
 
     def run(self):
         try:
@@ -1253,6 +1272,7 @@ class External(QThread):
         self.progress = 0
         self.frame = 1
         self.count = 0
+        self.start()
 
     def run(self):
         try:
@@ -1295,6 +1315,7 @@ class Worker(QThread):
         # super(External2, self).__init__()
         QThread.__init__(self, parent)
         self.gui = gui
+        self.start()
 
     def run(self):
         # Remove existing files
@@ -1382,6 +1403,9 @@ class Worker(QThread):
             # self.process_complete_messagebox()
         self.quit()
 
+def handler(msg_type, msg_log_context, msg_string):
+    pass
+QtCore.qInstallMessageHandler(handler)
 
 class CoronalWorker(QThread):
     """
@@ -1394,6 +1418,7 @@ class CoronalWorker(QThread):
         # super(External2, self).__init__()
         QThread.__init__(self, parent)
         self.gui = gui
+        self.start()
 
     def run(self):
         # Remove existing files
