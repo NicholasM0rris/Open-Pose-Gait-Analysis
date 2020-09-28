@@ -41,6 +41,7 @@ class GUI(QMainWindow):
         self.display.gui = self
         self.plot_frame_init()  # TODO currently must be defined after display data
         self.frame_count = self.display.frame_count
+        self.setAttribute(Qt.WA_DeleteOnClose)
         self.MainWindow.show()
 
     def setupUi(self, MainWindow):
@@ -275,9 +276,11 @@ class GUI(QMainWindow):
         if self.s_rknee_angle_checkBox_3 == Qt.Checked:
             self.num_operations += 1
         if not self.calc:
+            '''
             self.calc = External(self)
             self.calc.mySignal.connect(self.s_onCountChanged)
             self.calc.start()
+            '''
         else:
             print("set counter to 0")
             self.calc.progress = 0
@@ -312,9 +315,20 @@ class GUI(QMainWindow):
         """
         Once processing is complete notify the user
         """
+        if self.s_video_output_path == "":
+            try:
+                self.player.setMedia(QMediaContent(QUrl.fromLocalFile('Output.avi')))
+                self.player.setVideoOutput(self.video)
+            except Exception as e:
+                raise e
 
-        self.player.setMedia(QMediaContent(QUrl.fromLocalFile('{}/Output.avi'.format(self.s_video_output_path))))
-        self.player.setVideoOutput(self.video)
+        else:
+            try:
+                self.player.setMedia(QMediaContent(QUrl.fromLocalFile('{}/Output.avi'.format(self.s_video_output_path))))
+                self.player.setVideoOutput(self.video)
+            # DirectShowPlayerService error (The video doesn't exist so just pass)
+            except Exception as e:
+                pass
         # self.player.mediaStatusChanged.connect(self.mediaStatusChanged)
 
         # self.player.durationChanged.connect(self.durationChanged)
