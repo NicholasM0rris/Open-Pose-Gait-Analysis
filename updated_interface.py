@@ -40,6 +40,7 @@ class GUI(QMainWindow):
         QApplication.setStyle(QStyleFactory.create("Fusion"))
         self.display = display
         self.display.gui = self
+
         self.plot_frame_init()  # TODO currently must be defined after display data
         self.frame_count = self.display.frame_count
         self.setAttribute(Qt.WA_DeleteOnClose)
@@ -1023,8 +1024,113 @@ class GUI(QMainWindow):
             print("Setting {}".format(text))
             self.plot_stack.setCurrentIndex(3)
 
-    def plot_dropdown_init(self):
+        elif text == "Right Ankle Y Trajectory":
 
+            if not self.plot_index:
+                self.plot_index = 4
+            else:
+                self.plot_index += 1
+            self.RAYT_index = self.plot_index
+
+            ''' Right Ankle Y Trajectory plot '''
+
+            self.RAYTplot = self.display.create_graph("Right Ankle Trajectory", "Frame number", "Y Position (px)", list(range(len(self.display.data.key_points["RAnkle"]))),  [item[1] for item in self.display.data.key_points["RAnkle"]], True)
+            self.RAYT_toolbar = NavigationToolbar(self.RAYTplot, self)
+            self.RAYT_plot_layout = QtWidgets.QVBoxLayout()
+            self.RAYT_plot_layout.addWidget(self.RAYT_toolbar)
+            self.RAYT_plot_layout.addWidget(self.RAYTplot)
+
+            self.RAYT_plot_widget = QtWidgets.QWidget(self.plots_tab)
+            self.RAYT_plot_widget.setLayout(self.RAYT_plot_layout)
+            self.RAYT_plot_widget.setGeometry(QtCore.QRect(90, 10, 619, 403))
+            self.RAYT_plot_widget.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
+
+            self.plot_stack.addWidget(self.RAYT_plot_widget)
+            print("Setting {}".format(text))
+            self.plot_stack.setCurrentIndex(self.plot_index)
+
+        elif text == "Right Ankle Path Trajectory":
+
+            if not self.plot_index:
+                self.plot_index = 4
+            else:
+                self.plot_index += 1
+            self.RAPT_index = self.plot_index
+
+            ''' Right Ankle Path Trajectory plot '''
+
+            self.RAYPplot = self.display.create_graph("Right Ankle Path Trajectory", "X position (px)", "Y Position (px)", [item[0] for item in self.display.data.key_points["RAnkle"]], [item[1] for item in self.display.data.key_points["RAnkle"]], True)
+            self.RAYP_toolbar = NavigationToolbar(self.RAYPplot, self)
+            self.RAYP_plot_layout = QtWidgets.QVBoxLayout()
+            self.RAYP_plot_layout.addWidget(self.RAYP_toolbar)
+            self.RAYP_plot_layout.addWidget(self.RAYPplot)
+
+            self.RAYP_plot_widget = QtWidgets.QWidget(self.plots_tab)
+            self.RAYP_plot_widget.setLayout(self.RAYP_plot_layout)
+            self.RAYP_plot_widget.setGeometry(QtCore.QRect(90, 10, 619, 403))
+            self.RAYP_plot_widget.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
+
+            self.plot_stack.addWidget(self.RAYP_plot_widget)
+            print("Setting {}".format(text))
+            self.plot_stack.setCurrentIndex(self.plot_index)
+
+        elif text == "Left Ankle Y Trajectory":
+
+            if not self.plot_index:
+                self.plot_index = 4
+            else:
+                self.plot_index += 1
+            self.LAYT_index = self.plot_index
+
+            ''' Left Ankle Y Trajectory plot '''
+
+            self.LAYTplot = self.display.create_graph("Left Ankle Trajectory", "Frame number", "Y Position (px)", list(range(len(self.display.data.key_points["LAnkle"]))),  [item[1] for item in self.display.data.key_points["LAnkle"]], True)
+            self.LAYT_toolbar = NavigationToolbar(self.LAYTplot, self)
+            self.LAYT_plot_layout = QtWidgets.QVBoxLayout()
+            self.LAYT_plot_layout.addWidget(self.LAYT_toolbar)
+            self.LAYT_plot_layout.addWidget(self.LAYTplot)
+
+            self.LAYT_plot_widget = QtWidgets.QWidget(self.plots_tab)
+            self.LAYT_plot_widget.setLayout(self.LAYT_plot_layout)
+            self.LAYT_plot_widget.setGeometry(QtCore.QRect(90, 10, 619, 403))
+            self.LAYT_plot_widget.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
+
+            self.plot_stack.addWidget(self.LAYT_plot_widget)
+            print("Setting {}".format(text))
+            self.plot_stack.setCurrentIndex(self.plot_index)
+
+        elif text == "Left Ankle Path Trajectory":
+
+            if not self.plot_index:
+                self.plot_index = 4
+            else:
+                self.plot_index += 1
+            self.LAPT_index = self.plot_index
+
+            ''' Left Ankle Path Trajectory plot '''
+
+            self.LAPTplot = self.display.create_graph("Right Ankle Path Trajectory", "X position (px)",
+                                                      "Y Position (px)",
+                                                      [item[0] for item in self.display.data.key_points["RAnkle"]],
+                                                      [item[1] for item in self.display.data.key_points["RAnkle"]],
+                                                      True)
+            self.LAPT_toolbar = NavigationToolbar(self.LAPTplot, self)
+            self.LAPT_plot_layout = QtWidgets.QVBoxLayout()
+            self.LAPT_plot_layout.addWidget(self.LAPT_toolbar)
+            self.LAPT_plot_layout.addWidget(self.LAPTplot)
+
+            self.LAPT_plot_widget = QtWidgets.QWidget(self.plots_tab)
+            self.LAPT_plot_widget.setLayout(self.LAPT_plot_layout)
+            self.LAPT_plot_widget.setGeometry(QtCore.QRect(90, 10, 619, 403))
+            self.LAPT_plot_widget.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
+
+            self.plot_stack.addWidget(self.LAPT_plot_widget)
+            print("Setting {}".format(text))
+            self.plot_stack.setCurrentIndex(self.plot_index)
+
+
+    def plot_dropdown_init(self):
+        self.plot_index = None
         self.plot_dropdown = QtWidgets.QComboBox(self.plots_tab)
         self.plot_dropdown.setGeometry(QtCore.QRect(16, 466, 259, 41))
         self.plot_dropdown.setObjectName("plot_dropdown")
@@ -1033,6 +1139,10 @@ class GUI(QMainWindow):
         self.plot_dropdown.addItem("Filtered Cadence Line Plot")
         self.plot_dropdown.addItem("Unfiltered Cadence Line Plot")
         self.plot_dropdown.addItem("Unfiltered Cadence Scatter Plot")
+        self.plot_dropdown.addItem("Right Ankle Y Trajectory")
+        self.plot_dropdown.addItem("Right Ankle Path Trajectory")
+        self.plot_dropdown.addItem("Left Ankle Y Trajectory")
+        self.plot_dropdown.addItem("Left Ankle Path Trajectory")
 
         self.plot_dropdown.activated[str].connect(self.set_plot_dropdown)
 

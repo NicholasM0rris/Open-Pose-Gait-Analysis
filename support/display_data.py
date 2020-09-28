@@ -125,6 +125,10 @@ class DisplayData:
         self.points = []
 
     def select_points(self):
+        """
+        Function for calibrating the patients height measurements
+        :return:
+        """
         if self.image_path:
             self.image = cv2.imread(self.image_path)
         else:
@@ -316,6 +320,7 @@ class DisplayData:
         b = (p1.x - p3.x, p1.y - p3.y)
         a dot b = mag(a)mag(b)cos(theta)
         Returns the angle from three points by finding the cross product
+        :param print_option: If defined, print the angles to console log
         :param p3: point 1 (x,y)
         :param p2: point 2 (x,y)
         :param p1: common point to pt 1 & 2 (x,y)
@@ -1455,6 +1460,7 @@ class DisplayData:
         for x, idx in enumerate(step_list):
             try:
                 displacement = abs(bf.get_distance(self.fp("LBigToe", idx), self.fp("RBigToe", idx)))
+
                 self.stride_length_list.append(
                     "Stride length: {}. Frame: {}. Step count: {}".format(displacement, idx, x))
                 number_frames_passed = idx - step_list[x - 1]
@@ -1681,6 +1687,25 @@ class DisplayData:
         ''' Create a Qt plot for filtered line cadence'''
         self.filtered_cadence_line_plot = MplCanvas(self, "Filtered Cadence Line Plot", "Frame number", "Cadence (Steps/min)", width=5, height=4, dpi=100)
         self.filtered_cadence_line_plot.axes.plot(self.cadence_step_list[1:], self.cadence, linewidth=2, linestyle="-", c="b")
+
+    def create_graph(self, name, xlabel, ylabel, xdata, ydata, flip_y=False):
+        """
+
+        :param ydata:
+        :param xdata:
+        :param name: graph name string
+        :param xlabel: xlabel string
+        :param ylabel: ylabel string
+        :return:
+        """
+        colors = (0, 0, 0)
+        area = 10
+        self.graph = MplCanvas(self, name, xlabel, ylabel, width=5, height=4, dpi=100)
+        self.graph.axes.scatter(xdata, ydata, c=colors, s=area,
+                                                        alpha=0.5)
+        if flip_y == True:
+            self.graph.axes.invert_yaxis()
+        return self.graph
 
 
 class MplCanvas(FigureCanvasQTAgg):
