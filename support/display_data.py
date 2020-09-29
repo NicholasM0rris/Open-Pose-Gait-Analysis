@@ -313,6 +313,7 @@ class DisplayData:
                 min_dist = dist
         # TODO self.gui.max_dist_label.setText("Max dist: {}".format(max_dist))
         # self.gui.min_dist_label.setText("Min dist: {}".format(min_dist))
+        self.gui.plot_dropdown.addItem("Calculated distance plot")
 
     def get_angle(self, p3, p2, p1, print_option=None):
         """
@@ -439,12 +440,13 @@ class DisplayData:
                 temp_list.append(frame)
 
             self.frame_list = temp_list
-        # TODO: Depreciated under new interace
+
         """ Save the calculated angles to a text file """
+
+        #if self.gui.s_angle_checkBox == Qt.Checked:
+        print("Saving angles to text file")
+        self.save_text(self.angles, "Angle")
         '''
-        if self.gui.s_angle_checkBox == Qt.Checked:
-            print("Saving angles to text file")
-            self.save_text(self.angles, "Angle")
         max_angle = 0
         for an_angle in self.num_angles:
             if an_angle > max_angle:
@@ -454,6 +456,7 @@ class DisplayData:
         except:
             pass
         '''
+        self.gui.plot_dropdown.addItem("Calculated angles plot")
 
     def leg_body_angle_overlay(self):
         """
@@ -1456,13 +1459,16 @@ class DisplayData:
         else:
             step_list = self.right_index_list + self.left_index_list
             step_list.sort()
-
+        self.stride_displacement_list = []
+        self.stride_idx_list = []
         for x, idx in enumerate(step_list):
             try:
                 displacement = abs(bf.get_distance(self.fp("LBigToe", idx), self.fp("RBigToe", idx)))
 
                 self.stride_length_list.append(
                     "Stride length: {}. Frame: {}. Step count: {}".format(displacement, idx, x))
+                self.stride_displacement_list.append(displacement)
+                self.stride_idx_list.append(idx)
                 number_frames_passed = idx - step_list[x - 1]
                 t = number_frames_passed * (1 / self.fps)
                 speed = displacement / t
@@ -1475,10 +1481,13 @@ class DisplayData:
             except IndexError:
                 pass
         # Save the stride length to file
+        self.stride_length_mean = np.mean(self.stride_displacement_list)
+        self.stride_length_std = np.std(self.stride_idx_list)
         self.save_text(self.stride_length_list, "Stride_length")
         filtered_list = np.array(self.velocity_list)
         mean = np.mean(filtered_list)
         std = np.std(filtered_list)
+
         print("Average velocity: ", mean)
         print("std: ", std)
         save_to_file_list.append("Unfiltered average velocity: {}".format(mean))
@@ -1525,6 +1534,8 @@ class DisplayData:
         # filtered_list = [x for x in filtered_list if (x < mean + 2 * std)]
         mean = np.mean(self.velocity_list)
         std = np.std(self.velocity_list)
+        self.velocity_mean = mean
+        self.velocity_std = std
         save_to_file_list.append("Filtered average velocity: {}".format(mean))
         save_to_file_list.append("Filtered standard deviation: {}".format(std))
         self.save_text(save_to_file_list, "Velocities")
@@ -1640,6 +1651,8 @@ class DisplayData:
 
         mean = np.mean(self.cadence)
         std = np.std(self.cadence)
+        self.cadence_mean = mean
+        self.cadence_std = std
         save_to_file_list.append("Filtered mean: {}".format(mean))
         save_to_file_list.append("filtered std: {}".format(std))
         print("Average filtered cadence: ", mean)

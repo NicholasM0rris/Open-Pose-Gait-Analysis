@@ -48,7 +48,7 @@ class GUI(QMainWindow):
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(799, 592)
+        MainWindow.setFixedSize(799, 592)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.tabWidget = QtWidgets.QTabWidget(self.centralwidget)
@@ -932,7 +932,74 @@ class GUI(QMainWindow):
     def metrics_tab_init(self):
         self.metrics_tab = QtWidgets.QWidget()
         self.metrics_tab.setObjectName("metrics_tab")
+        self.metric_labels_init()
+
         self.tabWidget.addTab(self.metrics_tab, "")
+
+    def metric_labels_init(self):
+        self.metrics_update_pushButton = QtWidgets.QPushButton(self.metrics_tab)
+        self.metrics_update_pushButton.setGeometry(QtCore.QRect(620, 454, 155, 63))
+        self.metrics_update_pushButton.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        self.metrics_update_pushButton.setObjectName("metrics_update_pushButton")
+        self.metrics_update_pushButton.setText("Update")
+        self.metrics_update_pushButton.clicked.connect(self.metric_update_function)
+
+        self.mean_velocity_label = QtWidgets.QLabel(self.metrics_tab)
+        self.mean_velocity_label.setGeometry(QtCore.QRect(20, 25, 250, 45))
+        font = QtGui.QFont()
+        font.setFamily("MS Shell Dlg 2")
+        font.setPointSize(14)
+        self.mean_velocity_label.setFont(font)
+        self.mean_velocity_label.setObjectName("mean_velocity_label")
+        self.mean_velocity_label.setText("Mean velocity: ")
+
+        self.std_velocity_label = QtWidgets.QLabel(self.metrics_tab)
+        self.std_velocity_label.setGeometry(QtCore.QRect(20, 85, 250, 45))
+
+        self.std_velocity_label.setFont(font)
+        self.std_velocity_label.setObjectName("std_velocity_label")
+        self.std_velocity_label.setText("Std velocity: ")
+
+        self.mean_cadence_label = QtWidgets.QLabel(self.metrics_tab)
+        self.mean_cadence_label.setGeometry(QtCore.QRect(20, 145, 250, 45))
+
+        self.mean_cadence_label.setFont(font)
+        self.mean_cadence_label.setObjectName("mean_cadence_label")
+        self.mean_cadence_label.setText("Mean cadence: ")
+
+        self.std_cadence_label = QtWidgets.QLabel(self.metrics_tab)
+        self.std_cadence_label.setGeometry(QtCore.QRect(20, 205, 250, 45))
+
+        self.std_cadence_label.setFont(font)
+        self.std_cadence_label.setObjectName("std_cadence_label")
+        self.std_cadence_label.setText("Std cadence: ")
+
+        self.mean_stride_length_label = QtWidgets.QLabel(self.metrics_tab)
+        self.mean_stride_length_label.setGeometry(QtCore.QRect(20, 265, 250, 45))
+        self.mean_stride_length_label.setFont(font)
+        self.mean_stride_length_label.setObjectName("mean_stride_length_label")
+        self.mean_stride_length_label.setText("Mean stride length: ")
+
+        self.std_stride_length_label = QtWidgets.QLabel(self.metrics_tab)
+        self.std_stride_length_label.setGeometry(QtCore.QRect(20, 325, 250, 45))
+        self.std_stride_length_label.setFont(font)
+        self.std_stride_length_label.setObjectName("std_stride_length_label")
+        self.std_stride_length_label.setText("Std stride length: ")
+
+    def metric_update_function(self):
+
+        self.mean_velocity_label.setText("Mean velocity: {} px/s".format('%s' % float('%.6g' % self.display.velocity_mean)))
+        self.std_velocity_label.setText("Std velocity: {} px/s".format('%s' % float('%.6g' % self.display.velocity_std)))
+
+        self.std_cadence_label.setText("Std cadence: {}".format('%s' % float('%.6g' % self.display.cadence_std)))
+        self.mean_cadence_label.setText("Mean cadence: {}".format('%s' % float('%.6g' % self.display.cadence_mean)))
+
+        self.mean_stride_length_label.setText("Mean Stride length: {} px".format('%s' % float('%.6g' % self.display.stride_length_mean)))
+        self.std_stride_length_label.setText(
+            "Std Stride length: {} px".format('%s' % float('%.6g' % self.display.stride_length_std)))
+
+
+
 
     def plots_tab_init(self):
         self.plots_tab = QtWidgets.QWidget()
@@ -1111,8 +1178,8 @@ class GUI(QMainWindow):
 
             self.LAPTplot = self.display.create_graph("Right Ankle Path Trajectory", "X position (px)",
                                                       "Y Position (px)",
-                                                      [item[0] for item in self.display.data.key_points["RAnkle"]],
-                                                      [item[1] for item in self.display.data.key_points["RAnkle"]],
+                                                      [item[0] for item in self.display.data.key_points["LAnkle"]],
+                                                      [item[1] for item in self.display.data.key_points["LAnkle"]],
                                                       True)
             self.LAPT_toolbar = NavigationToolbar(self.LAPTplot, self)
             self.LAPT_plot_layout = QtWidgets.QVBoxLayout()
@@ -1127,6 +1194,101 @@ class GUI(QMainWindow):
             self.plot_stack.addWidget(self.LAPT_plot_widget)
             print("Setting {}".format(text))
             self.plot_stack.setCurrentIndex(self.plot_index)
+
+        elif text == "Stride length":
+
+            if not self.plot_index:
+                self.plot_index = 4
+            else:
+                self.plot_index += 1
+            self.SL_index = self.plot_index
+
+            ''' Stride length plot '''
+
+            self.SLplot = self.display.create_graph("Stride length", "Frame number",
+                                                      "Stride length (px)",
+                                                      self.display.stride_idx_list, self.display.stride_displacement_list)
+            xmin = 0
+            xmax = len(self.display.data.data_files)
+            self.SLplot.axes.set_xlim([xmin, xmax])
+            self.SLplot.axes.set_ylim([0, None])
+            self.SL_toolbar = NavigationToolbar(self.SLplot, self)
+            self.SL_plot_layout = QtWidgets.QVBoxLayout()
+            self.SL_plot_layout.addWidget(self.SL_toolbar)
+            self.SL_plot_layout.addWidget(self.SLplot)
+
+            self.SL_plot_widget = QtWidgets.QWidget(self.plots_tab)
+            self.SL_plot_widget.setLayout(self.SL_plot_layout)
+            self.SL_plot_widget.setGeometry(QtCore.QRect(90, 10, 619, 403))
+            self.SL_plot_widget.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
+
+            self.plot_stack.addWidget(self.SL_plot_widget)
+            print("Setting {}".format(text))
+            self.plot_stack.setCurrentIndex(self.plot_index)
+
+        elif text == "Calculated distance plot":
+
+            if not self.plot_index:
+                self.plot_index = 4
+            else:
+                self.plot_index += 1
+            self.CD_index = self.plot_index
+
+            ''' Stride length plot '''
+
+            self.CDplot = self.display.create_graph("Calculated distances", "Frame number",
+                                                      "Distance (px)",
+                                                     list(range(len(self.display.data.data_files))), self.display.num_distances)
+            xmin = 0
+            xmax = len(self.display.data.data_files)
+            self.CDplot.axes.set_xlim([xmin, xmax])
+            self.CDplot.axes.set_ylim([0, None])
+            self.CD_toolbar = NavigationToolbar(self.CDplot, self)
+            self.CD_plot_layout = QtWidgets.QVBoxLayout()
+            self.CD_plot_layout.addWidget(self.CD_toolbar)
+            self.CD_plot_layout.addWidget(self.CDplot)
+
+            self.CD_plot_widget = QtWidgets.QWidget(self.plots_tab)
+            self.CD_plot_widget.setLayout(self.CD_plot_layout)
+            self.CD_plot_widget.setGeometry(QtCore.QRect(90, 10, 619, 403))
+            self.CD_plot_widget.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
+
+            self.plot_stack.addWidget(self.CD_plot_widget)
+            print("Setting {}".format(text))
+            self.plot_stack.setCurrentIndex(self.plot_index)
+
+        elif text == "Calculated angles plot":
+
+            if not self.plot_index:
+                self.plot_index = 4
+            else:
+                self.plot_index += 1
+            self.SL_index = self.plot_index
+
+            ''' Stride length plot '''
+
+            self.CDplot = self.display.create_graph("Calculated angles", "Frame number",
+                                                      "Angle (degrees)",
+                                                     list(range(len(self.display.data.data_files))), self.display.num_angles)
+            xmin = 0
+            xmax = len(self.display.data.data_files)
+            self.CDplot.axes.set_xlim([xmin, xmax])
+            self.CDplot.axes.set_ylim([0, None])
+            self.CD_toolbar = NavigationToolbar(self.CDplot, self)
+            self.CD_plot_layout = QtWidgets.QVBoxLayout()
+            self.CD_plot_layout.addWidget(self.CD_toolbar)
+            self.CD_plot_layout.addWidget(self.CDplot)
+
+            self.CD_plot_widget = QtWidgets.QWidget(self.plots_tab)
+            self.CD_plot_widget.setLayout(self.CD_plot_layout)
+            self.CD_plot_widget.setGeometry(QtCore.QRect(90, 10, 619, 403))
+            self.CD_plot_widget.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
+
+            self.plot_stack.addWidget(self.CD_plot_widget)
+            print("Setting {}".format(text))
+            self.plot_stack.setCurrentIndex(self.plot_index)
+
+
 
 
     def plot_dropdown_init(self):
@@ -1143,6 +1305,7 @@ class GUI(QMainWindow):
         self.plot_dropdown.addItem("Right Ankle Path Trajectory")
         self.plot_dropdown.addItem("Left Ankle Y Trajectory")
         self.plot_dropdown.addItem("Left Ankle Path Trajectory")
+        self.plot_dropdown.addItem("Stride length")
 
         self.plot_dropdown.activated[str].connect(self.set_plot_dropdown)
 
