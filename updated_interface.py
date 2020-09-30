@@ -14,7 +14,6 @@ from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.Qt import QUrl
 
 
-
 class GUI(QMainWindow):
 
     def __init__(self, display):
@@ -326,7 +325,8 @@ class GUI(QMainWindow):
 
         else:
             try:
-                self.player.setMedia(QMediaContent(QUrl.fromLocalFile('{}/Output.avi'.format(self.s_video_output_path))))
+                self.player.setMedia(
+                    QMediaContent(QUrl.fromLocalFile('{}/Output.avi'.format(self.s_video_output_path))))
                 self.player.setVideoOutput(self.video)
             # DirectShowPlayerService error (The video doesn't exist so just pass)
             except Exception as e:
@@ -945,61 +945,91 @@ class GUI(QMainWindow):
         self.metrics_update_pushButton.clicked.connect(self.metric_update_function)
 
         self.mean_velocity_label = QtWidgets.QLabel(self.metrics_tab)
-        self.mean_velocity_label.setGeometry(QtCore.QRect(20, 25, 250, 45))
+        self.mean_velocity_label.setGeometry(QtCore.QRect(20, 25, 300, 45))
         font = QtGui.QFont()
         font.setFamily("MS Shell Dlg 2")
-        font.setPointSize(14)
+        font.setPointSize(12)
         self.mean_velocity_label.setFont(font)
         self.mean_velocity_label.setObjectName("mean_velocity_label")
         self.mean_velocity_label.setText("Mean velocity: ")
 
         self.std_velocity_label = QtWidgets.QLabel(self.metrics_tab)
-        self.std_velocity_label.setGeometry(QtCore.QRect(20, 85, 250, 45))
+        self.std_velocity_label.setGeometry(QtCore.QRect(20, 85, 300, 45))
 
         self.std_velocity_label.setFont(font)
         self.std_velocity_label.setObjectName("std_velocity_label")
         self.std_velocity_label.setText("Std velocity: ")
 
         self.mean_cadence_label = QtWidgets.QLabel(self.metrics_tab)
-        self.mean_cadence_label.setGeometry(QtCore.QRect(20, 145, 250, 45))
+        self.mean_cadence_label.setGeometry(QtCore.QRect(20, 145, 300, 45))
 
         self.mean_cadence_label.setFont(font)
         self.mean_cadence_label.setObjectName("mean_cadence_label")
         self.mean_cadence_label.setText("Mean cadence: ")
 
         self.std_cadence_label = QtWidgets.QLabel(self.metrics_tab)
-        self.std_cadence_label.setGeometry(QtCore.QRect(20, 205, 250, 45))
+        self.std_cadence_label.setGeometry(QtCore.QRect(20, 205, 300, 45))
 
         self.std_cadence_label.setFont(font)
         self.std_cadence_label.setObjectName("std_cadence_label")
         self.std_cadence_label.setText("Std cadence: ")
 
         self.mean_stride_length_label = QtWidgets.QLabel(self.metrics_tab)
-        self.mean_stride_length_label.setGeometry(QtCore.QRect(20, 265, 250, 45))
+        self.mean_stride_length_label.setGeometry(QtCore.QRect(20, 265, 300, 45))
         self.mean_stride_length_label.setFont(font)
         self.mean_stride_length_label.setObjectName("mean_stride_length_label")
         self.mean_stride_length_label.setText("Mean stride length: ")
 
         self.std_stride_length_label = QtWidgets.QLabel(self.metrics_tab)
-        self.std_stride_length_label.setGeometry(QtCore.QRect(20, 325, 250, 45))
+        self.std_stride_length_label.setGeometry(QtCore.QRect(20, 325, 300, 45))
         self.std_stride_length_label.setFont(font)
         self.std_stride_length_label.setObjectName("std_stride_length_label")
         self.std_stride_length_label.setText("Std stride length: ")
 
+        self.max_stride_length_label = QtWidgets.QLabel(self.metrics_tab)
+        self.max_stride_length_label.setGeometry(QtCore.QRect(20, 385, 300, 45))
+        self.max_stride_length_label.setFont(font)
+        self.max_stride_length_label.setObjectName("max_stride_length_label")
+        self.max_stride_length_label.setText("Max stride length: ")
+
+        self.max_angle_label = QtWidgets.QLabel(self.metrics_tab)
+        self.max_angle_label.setGeometry(QtCore.QRect(20, 445, 300, 45))
+        self.max_angle_label.setFont(font)
+        self.max_angle_label.setObjectName("max_angle_label")
+        self.max_angle_label.setText("Max angle between legs: ")
+
+        self.mean_angle_label = QtWidgets.QLabel(self.metrics_tab)
+        self.mean_angle_label.setGeometry(QtCore.QRect(350, 25, 300, 45))
+        self.mean_angle_label.setFont(font)
+        self.mean_angle_label.setObjectName("mean_angle_label")
+        self.mean_angle_label.setText("Mean angle between legs: ")
+
     def metric_update_function(self):
 
-        self.mean_velocity_label.setText("Mean velocity: {} px/s".format('%s' % float('%.6g' % self.display.velocity_mean)))
-        self.std_velocity_label.setText("Std velocity: {} px/s".format('%s' % float('%.6g' % self.display.velocity_std)))
+        self.mean_velocity_label.setText(
+            "Mean velocity: {} px/s".format('%s' % float('%.6g' % self.display.velocity_mean)))
+        self.std_velocity_label.setText(
+            "Std velocity: {} px/s".format('%s' % float('%.6g' % self.display.velocity_std)))
 
         self.std_cadence_label.setText("Std cadence: {}".format('%s' % float('%.6g' % self.display.cadence_std)))
         self.mean_cadence_label.setText("Mean cadence: {}".format('%s' % float('%.6g' % self.display.cadence_mean)))
 
-        self.mean_stride_length_label.setText("Mean Stride length: {} px".format('%s' % float('%.6g' % self.display.stride_length_mean)))
+        self.mean_stride_length_label.setText(
+            "Mean Stride length: {} px".format('%s' % float('%.6g' % self.display.stride_length_mean)))
         self.std_stride_length_label.setText(
             "Std Stride length: {} px".format('%s' % float('%.6g' % self.display.stride_length_std)))
-
-
-
+        try:
+            self.max_angle_label.setText(
+                "Max angle between legs: {} deg".format('%s' % float('%.6g' % self.display.max_angle)))
+        except TypeError:
+            self.max_angle_label.setText("Max angle between legs: n/a")
+        try:
+            self.mean_angle_label.setText(
+                "Mean angle between legs: {} deg".format('%s' % float('%.6g' % self.display.mean_angle)))
+        except TypeError:
+            self.mean_angle_label.setText("Mean angle between legs: n/a")
+        self.max_stride_length_label.setText(
+            "Max stride length: {} px".format('%s' % float('%.6g' % self.display.stride_length_max)))
 
     def plots_tab_init(self):
         self.plots_tab = QtWidgets.QWidget()
@@ -1101,7 +1131,10 @@ class GUI(QMainWindow):
 
             ''' Right Ankle Y Trajectory plot '''
 
-            self.RAYTplot = self.display.create_graph("Right Ankle Trajectory", "Frame number", "Y Position (px)", list(range(len(self.display.data.key_points["RAnkle"]))),  [item[1] for item in self.display.data.key_points["RAnkle"]], True)
+            self.RAYTplot = self.display.create_graph("Right Ankle Trajectory", "Frame number", "Y Position (px)",
+                                                      list(range(len(self.display.data.key_points["RAnkle"]))),
+                                                      [item[1] for item in self.display.data.key_points["RAnkle"]],
+                                                      True)
             self.RAYT_toolbar = NavigationToolbar(self.RAYTplot, self)
             self.RAYT_plot_layout = QtWidgets.QVBoxLayout()
             self.RAYT_plot_layout.addWidget(self.RAYT_toolbar)
@@ -1116,6 +1149,62 @@ class GUI(QMainWindow):
             print("Setting {}".format(text))
             self.plot_stack.setCurrentIndex(self.plot_index)
 
+        elif text == "Right Knee Y Trajectory":
+
+            if not self.plot_index:
+                self.plot_index = 4
+            else:
+                self.plot_index += 1
+            self.RKYT_index = self.plot_index
+
+            ''' Right Knee Y Trajectory plot '''
+
+            self.RKYTplot = self.display.create_graph("Right Knee Trajectory", "Frame number", "Y Position (px)",
+                                                      list(range(len(self.display.data.key_points["RKnee"]))),
+                                                      [item[1] for item in self.display.data.key_points["RKnee"]],
+                                                      True)
+            self.RKYT_toolbar = NavigationToolbar(self.RKYTplot, self)
+            self.RKYT_plot_layout = QtWidgets.QVBoxLayout()
+            self.RKYT_plot_layout.addWidget(self.RKYT_toolbar)
+            self.RKYT_plot_layout.addWidget(self.RKYTplot)
+
+            self.RKYT_plot_widget = QtWidgets.QWidget(self.plots_tab)
+            self.RKYT_plot_widget.setLayout(self.RKYT_plot_layout)
+            self.RKYT_plot_widget.setGeometry(QtCore.QRect(90, 10, 619, 403))
+            self.RKYT_plot_widget.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
+
+            self.plot_stack.addWidget(self.RKYT_plot_widget)
+            print("Setting {}".format(text))
+            self.plot_stack.setCurrentIndex(self.plot_index)
+
+        elif text == "Left Knee Y Trajectory":
+
+            if not self.plot_index:
+                self.plot_index = 4
+            else:
+                self.plot_index += 1
+            self.LKYT_index = self.plot_index
+
+            ''' Left Knee Y Trajectory plot '''
+
+            self.LKYTplot = self.display.create_graph("Left Knee Trajectory", "Frame number", "Y Position (px)",
+                                                      list(range(len(self.display.data.key_points["LKnee"]))),
+                                                      [item[1] for item in self.display.data.key_points["LKnee"]],
+                                                      True)
+            self.LKYT_toolbar = NavigationToolbar(self.LKYTplot, self)
+            self.LKYT_plot_layout = QtWidgets.QVBoxLayout()
+            self.LKYT_plot_layout.addWidget(self.LKYT_toolbar)
+            self.LKYT_plot_layout.addWidget(self.LKYTplot)
+
+            self.LKYT_plot_widget = QtWidgets.QWidget(self.plots_tab)
+            self.LKYT_plot_widget.setLayout(self.LKYT_plot_layout)
+            self.LKYT_plot_widget.setGeometry(QtCore.QRect(90, 10, 619, 403))
+            self.LKYT_plot_widget.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
+
+            self.plot_stack.addWidget(self.LKYT_plot_widget)
+            print("Setting {}".format(text))
+            self.plot_stack.setCurrentIndex(self.plot_index)
+
         elif text == "Right Ankle Path Trajectory":
 
             if not self.plot_index:
@@ -1126,7 +1215,11 @@ class GUI(QMainWindow):
 
             ''' Right Ankle Path Trajectory plot '''
 
-            self.RAYPplot = self.display.create_graph("Right Ankle Path Trajectory", "X position (px)", "Y Position (px)", [item[0] for item in self.display.data.key_points["RAnkle"]], [item[1] for item in self.display.data.key_points["RAnkle"]], True)
+            self.RAYPplot = self.display.create_graph("Right Ankle Path Trajectory", "X position (px)",
+                                                      "Y Position (px)",
+                                                      [item[0] for item in self.display.data.key_points["RAnkle"]],
+                                                      [item[1] for item in self.display.data.key_points["RAnkle"]],
+                                                      True)
             self.RAYP_toolbar = NavigationToolbar(self.RAYPplot, self)
             self.RAYP_plot_layout = QtWidgets.QVBoxLayout()
             self.RAYP_plot_layout.addWidget(self.RAYP_toolbar)
@@ -1141,6 +1234,64 @@ class GUI(QMainWindow):
             print("Setting {}".format(text))
             self.plot_stack.setCurrentIndex(self.plot_index)
 
+        elif text == "Right Knee Path Trajectory":
+
+            if not self.plot_index:
+                self.plot_index = 4
+            else:
+                self.plot_index += 1
+            self.RKPT_index = self.plot_index
+
+            ''' Right Knee Path Trajectory plot '''
+
+            self.RKPTplot = self.display.create_graph("Right Knee Path Trajectory", "X position (px)",
+                                                      "Y Position (px)",
+                                                      [item[0] for item in self.display.data.key_points["RKnee"]],
+                                                      [item[1] for item in self.display.data.key_points["RKnee"]],
+                                                      True)
+            self.RKPT_toolbar = NavigationToolbar(self.RKPTplot, self)
+            self.RKPT_plot_layout = QtWidgets.QVBoxLayout()
+            self.RKPT_plot_layout.addWidget(self.RKPT_toolbar)
+            self.RKPT_plot_layout.addWidget(self.RKPTplot)
+
+            self.RKPT_plot_widget = QtWidgets.QWidget(self.plots_tab)
+            self.RKPT_plot_widget.setLayout(self.RKPT_plot_layout)
+            self.RKPT_plot_widget.setGeometry(QtCore.QRect(90, 10, 619, 403))
+            self.RKPT_plot_widget.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
+
+            self.plot_stack.addWidget(self.RKPT_plot_widget)
+            print("Setting {}".format(text))
+            self.plot_stack.setCurrentIndex(self.plot_index)
+
+        elif text == "Left Knee Path Trajectory":
+
+            if not self.plot_index:
+                self.plot_index = 4
+            else:
+                self.plot_index += 1
+            self.LKPT_index = self.plot_index
+
+            ''' Left Knee Path Trajectory plot '''
+
+            self.LKPTplot = self.display.create_graph("Left Knee Path Trajectory", "X position (px)",
+                                                      "Y Position (px)",
+                                                      [item[0] for item in self.display.data.key_points["LKnee"]],
+                                                      [item[1] for item in self.display.data.key_points["LKnee"]],
+                                                      True)
+            self.LKPT_toolbar = NavigationToolbar(self.LKPTplot, self)
+            self.LKPT_plot_layout = QtWidgets.QVBoxLayout()
+            self.LKPT_plot_layout.addWidget(self.LKPT_toolbar)
+            self.LKPT_plot_layout.addWidget(self.LKPTplot)
+
+            self.LKPT_plot_widget = QtWidgets.QWidget(self.plots_tab)
+            self.LKPT_plot_widget.setLayout(self.LKPT_plot_layout)
+            self.LKPT_plot_widget.setGeometry(QtCore.QRect(90, 10, 619, 403))
+            self.LKPT_plot_widget.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
+
+            self.plot_stack.addWidget(self.LKPT_plot_widget)
+            print("Setting {}".format(text))
+            self.plot_stack.setCurrentIndex(self.plot_index)
+
         elif text == "Left Ankle Y Trajectory":
 
             if not self.plot_index:
@@ -1151,7 +1302,10 @@ class GUI(QMainWindow):
 
             ''' Left Ankle Y Trajectory plot '''
 
-            self.LAYTplot = self.display.create_graph("Left Ankle Trajectory", "Frame number", "Y Position (px)", list(range(len(self.display.data.key_points["LAnkle"]))),  [item[1] for item in self.display.data.key_points["LAnkle"]], True)
+            self.LAYTplot = self.display.create_graph("Left Ankle Trajectory", "Frame number", "Y Position (px)",
+                                                      list(range(len(self.display.data.key_points["LAnkle"]))),
+                                                      [item[1] for item in self.display.data.key_points["LAnkle"]],
+                                                      True)
             self.LAYT_toolbar = NavigationToolbar(self.LAYTplot, self)
             self.LAYT_plot_layout = QtWidgets.QVBoxLayout()
             self.LAYT_plot_layout.addWidget(self.LAYT_toolbar)
@@ -1206,8 +1360,8 @@ class GUI(QMainWindow):
             ''' Stride length plot '''
 
             self.SLplot = self.display.create_graph("Stride length", "Frame number",
-                                                      "Stride length (px)",
-                                                      self.display.stride_idx_list, self.display.stride_displacement_list)
+                                                    "Stride length (px)",
+                                                    self.display.stride_idx_list, self.display.stride_displacement_list)
             xmin = 0
             xmax = len(self.display.data.data_files)
             self.SLplot.axes.set_xlim([xmin, xmax])
@@ -1237,8 +1391,9 @@ class GUI(QMainWindow):
             ''' Stride length plot '''
 
             self.CDplot = self.display.create_graph("Calculated distances", "Frame number",
-                                                      "Distance (px)",
-                                                     list(range(len(self.display.data.data_files))), self.display.num_distances)
+                                                    "Distance (px)",
+                                                    list(range(len(self.display.data.data_files))),
+                                                    self.display.num_distances)
             xmin = 0
             xmax = len(self.display.data.data_files)
             self.CDplot.axes.set_xlim([xmin, xmax])
@@ -1257,7 +1412,7 @@ class GUI(QMainWindow):
             print("Setting {}".format(text))
             self.plot_stack.setCurrentIndex(self.plot_index)
 
-        elif text == "Calculated angles plot":
+        elif text == "Calculated angles between legs plot":
 
             if not self.plot_index:
                 self.plot_index = 4
@@ -1268,8 +1423,9 @@ class GUI(QMainWindow):
             ''' Stride length plot '''
 
             self.CDplot = self.display.create_graph("Calculated angles", "Frame number",
-                                                      "Angle (degrees)",
-                                                     list(range(len(self.display.data.data_files))), self.display.num_angles)
+                                                    "Angle (degrees)",
+                                                    list(range(len(self.display.data.data_files))),
+                                                    self.display.num_angles)
             xmin = 0
             xmax = len(self.display.data.data_files)
             self.CDplot.axes.set_xlim([xmin, xmax])
@@ -1287,9 +1443,6 @@ class GUI(QMainWindow):
             self.plot_stack.addWidget(self.CD_plot_widget)
             print("Setting {}".format(text))
             self.plot_stack.setCurrentIndex(self.plot_index)
-
-
-
 
     def plot_dropdown_init(self):
         self.plot_index = None
@@ -1305,6 +1458,10 @@ class GUI(QMainWindow):
         self.plot_dropdown.addItem("Right Ankle Path Trajectory")
         self.plot_dropdown.addItem("Left Ankle Y Trajectory")
         self.plot_dropdown.addItem("Left Ankle Path Trajectory")
+        self.plot_dropdown.addItem("Left Knee Y Trajectory")
+        self.plot_dropdown.addItem("Left Knee Path Trajectory")
+        self.plot_dropdown.addItem("Right Knee Y Trajectory")
+        self.plot_dropdown.addItem("Right Knee Path Trajectory")
         self.plot_dropdown.addItem("Stride length")
 
         self.plot_dropdown.activated[str].connect(self.set_plot_dropdown)
@@ -1676,9 +1833,13 @@ class Worker(QThread):
             # self.process_complete_messagebox()
         self.quit()
 
+
 def handler(msg_type, msg_log_context, msg_string):
     pass
+
+
 QtCore.qInstallMessageHandler(handler)
+
 
 class CoronalWorker(QThread):
     """

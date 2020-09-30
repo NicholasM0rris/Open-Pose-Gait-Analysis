@@ -28,6 +28,8 @@ class DisplayData:
         self.image_path = None
         self.right_foot_count = 0
         self.left_foot_count = 0
+        self.max_angle = None
+        self.mean_angle = None
         # Define list for index/frames in which step is made
         self.right_foot_index = []
         self.left_foot_index = []
@@ -456,7 +458,10 @@ class DisplayData:
         except:
             pass
         '''
-        self.gui.plot_dropdown.addItem("Calculated angles plot")
+        self.max_angle = np.max(self.num_angles)
+        self.mean_angle = np.mean(self.num_angles)
+        self.gui.plot_dropdown.addItem("Calculated angles between legs plot")
+
 
     def leg_body_angle_overlay(self):
         """
@@ -1483,6 +1488,7 @@ class DisplayData:
         # Save the stride length to file
         self.stride_length_mean = np.mean(self.stride_displacement_list)
         self.stride_length_std = np.std(self.stride_idx_list)
+        self.stride_length_max = np.max(self.stride_displacement_list)
         self.save_text(self.stride_length_list, "Stride_length")
         filtered_list = np.array(self.velocity_list)
         mean = np.mean(filtered_list)
