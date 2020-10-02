@@ -13,11 +13,11 @@ from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.Qt import QUrl
 
-
 class GUI(QMainWindow):
 
     def __init__(self, display):
-        super(GUI, self).__init__()
+        QMainWindow.__init__(self)
+        #super(GUI, self).__init__()
         self.num_operations = 0
         self.calc = None
         self.output_movie = ""
@@ -32,10 +32,10 @@ class GUI(QMainWindow):
         self.preview_count = 0
         self.max_preview_count = None
 
-        self.MainWindow = QtWidgets.QMainWindow()
+
         # ui = GUI(display)
-        self.setupUi(self.MainWindow)
-        self.MainWindow.setWindowTitle("Early development user interface A204 V2.31")
+        self.setupUi()
+        self.setWindowTitle("Early development user interface A204 V2.31")
         QApplication.setStyle(QStyleFactory.create("Fusion"))
         self.display = display
         self.display.gui = self
@@ -43,12 +43,11 @@ class GUI(QMainWindow):
         self.plot_frame_init()  # TODO currently must be defined after display data
         self.frame_count = self.display.frame_count
         self.setAttribute(Qt.WA_DeleteOnClose)
-        self.MainWindow.show()
 
-    def setupUi(self, MainWindow):
-        MainWindow.setObjectName("MainWindow")
-        MainWindow.setFixedSize(799, 592)
-        self.centralwidget = QtWidgets.QWidget(MainWindow)
+    def setupUi(self):
+        self.setObjectName("MainWindow")
+        self.setFixedSize(799, 592)
+        self.centralwidget = QtWidgets.QWidget()
         self.centralwidget.setObjectName("centralwidget")
         self.tabWidget = QtWidgets.QTabWidget(self.centralwidget)
         self.tabWidget.setEnabled(True)
@@ -1500,22 +1499,22 @@ class GUI(QMainWindow):
         self.pushButton_16.setGeometry(QtCore.QRect(660, 462, 87, 45))
         self.pushButton_16.setObjectName("pushButton_16")
         self.tabWidget.addTab(self.plots_tab, "")
-        self.MainWindow.setCentralWidget(self.centralwidget)
-        self.menubar = QtWidgets.QMenuBar(self.MainWindow)
+        self.setCentralWidget(self.centralwidget)
+        self.menubar = QtWidgets.QMenuBar(self)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 799, 21))
         self.menubar.setObjectName("menubar")
-        self.MainWindow.setMenuBar(self.menubar)
-        self.statusbar = QtWidgets.QStatusBar(self.MainWindow)
+        self.setMenuBar(self.menubar)
+        self.statusbar = QtWidgets.QStatusBar(self)
         self.statusbar.setObjectName("statusbar")
-        self.MainWindow.setStatusBar(self.statusbar)
+        self.setStatusBar(self.statusbar)
 
-        self.retranslateUi(self.MainWindow)
+        self.retranslateUi()
         self.tabWidget.setCurrentIndex(1)
-        QtCore.QMetaObject.connectSlotsByName(self.MainWindow)
+        QtCore.QMetaObject.connectSlotsByName(self)
 
-    def retranslateUi(self, MainWindow):
+    def retranslateUi(self):
         _translate = QtCore.QCoreApplication.translate
-        self.MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        self.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.height_label.setToolTip(_translate("MainWindow", "Enter the person\'s height in mm"))
         self.height_label.setText(_translate("MainWindow", "Enter height: (mm)"))
         self.calibrate_height_pushButton.setText(_translate("MainWindow", "Calibrate!"))
@@ -1836,9 +1835,7 @@ class Worker(QThread):
 
 def handler(msg_type, msg_log_context, msg_string):
     pass
-
-
-QtCore.qInstallMessageHandler(handler)
+#QtCore.qInstallMessageHandler(handler)
 
 
 class CoronalWorker(QThread):

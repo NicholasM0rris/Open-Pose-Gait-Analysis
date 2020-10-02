@@ -13,8 +13,10 @@ ap.add_argument('-height', '--height', required=False, type=int, help='Add heigh
 ap.add_argument('-fps', '--fps', required=False, type=int, help='FPS to save video output')
 ap.add_argument('-vl', '-video_length', required=False, type=float, help='Add the video length in seconds')
 ap.add_argument('-a', '--anon', required=False, default=False, help='Set anonymous mode to True or False')
-ap.add_argument('-ac', '--anonc', required=False, default=False, help='CORONAL PLANE: Set anonymous mode to True or False')
-ap.add_argument('-t', '--treadmill', required=False, default=False, help='Treadmill: Set treadmill to True if the person is walking on a treadmill')
+ap.add_argument('-ac', '--anonc', required=False, default=False,
+                help='CORONAL PLANE: Set anonymous mode to True or False')
+ap.add_argument('-t', '--treadmill', required=False, default=False,
+                help='Treadmill: Set treadmill to True if the person is walking on a treadmill')
 
 args = vars(ap.parse_args())
 
@@ -25,17 +27,21 @@ import updated_interface as test_gui
 import sys
 import pyqtgraph as pg
 
+app = None
+
+
 def main(argv=None):
     data = extract_data.ExtractData()
     display = display_data.DisplayData(data)
     # distance_overlay(display, "RBigToe", "LBigToe")
     # display.distance_overlay()
+    global app  # This line saved my life. It does not work without it
     app = test_gui.QApplication([])
-    app.aboutToQuit.connect(app.deleteLater)
-    #gui = interface.GUI(display)
+    # app.aboutToQuit.connect(app.deleteLater) <- f*** this ***** line cost me at least 60 years of well being ***  *** it works without it ***
+    # gui = interface.GUI(display)
     gui = test_gui.GUI(display)
-    app.exec_()
-    pg.exit()
+    gui.show()
+    sys.exit(app.exec_())
 
 
 if __name__ == '__main__':

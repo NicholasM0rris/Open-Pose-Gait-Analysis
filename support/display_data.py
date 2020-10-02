@@ -1707,6 +1707,14 @@ class DisplayData:
         self.filtered_cadence_line_plot = MplCanvas(self, "Filtered Cadence Line Plot", "Frame number", "Cadence (Steps/min)", width=5, height=4, dpi=100)
         self.filtered_cadence_line_plot.axes.plot(self.cadence_step_list[1:], self.cadence, linewidth=2, linestyle="-", c="b")
 
+
+        '''
+        bf.create_custom_scatterplot(list(range(len(self.data.key_points["RKnee"]))),
+                                                      [item[1] for item in self.data.key_points["RKnee"]], 10000, "RKST")
+        '''
+
+
+
     def create_graph(self, name, xlabel, ylabel, xdata, ydata, flip_y=False):
         """
 

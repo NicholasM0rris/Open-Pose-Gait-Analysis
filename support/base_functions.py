@@ -5,6 +5,8 @@ import numpy as np
 import glob
 import re
 import os
+import matplotlib.pyplot as plt
+import pandas as pd
 import argparse
 from PIL import Image, ImageFilter
 from main import args
@@ -351,6 +353,108 @@ def get_video_length(video_path):
         print("The video path is wrong.")
         sys.exit()
     return duration, frame_count, fps
+
+
+# Create new dataframe consisting of two columns name_X, name_y
+def extract_from_dataset(dataset, name_X, name_Y):
+    return dataset[[name_X, name_Y]].copy()
+
+
+# Create a dictionary containing intervals (v) and theirs number (k)
+def intervals_d(df, n_slices, name_X):
+    "https://datascienceplus.com/simple-experiments-with-smoothed-scatterplots/"
+    out, bins = pd.qcut(df[name_X].rank(method='first'), n_slices, retbins=True)
+    intervals = [pd.Interval(left=bins[i], right=bins[i + 1], closed='right')
+                 for i in range(len(bins) - 1)]
+    intervals_dict = dict(zip(range(1, len(bins)), intervals))
+    return intervals_dict
+
+
+# Check whether x belongs to an interval from intervals dictionary
+def set_interval(x, intervals_dict):
+    "https://datascienceplus.com/simple-experiments-with-smoothed-scatterplots/"
+    for k, v in intervals_dict.items():
+        if x in v:
+            return k
+
+
+# Smooth X and Y using mean values
+def smooth(df, name_X, name_Y, intervals_dict):
+    "https://datascienceplus.com/simple-experiments-with-smoothed-scatterplots/"
+    df['X_Interval'] = df[name_X].apply(lambda x: set_interval(x, intervals_dict))
+    smoothed_df = df.groupby(by='X_Interval').apply(np.mean)[[name_X, name_Y]]
+    smoothed_df = smoothed_df.reset_index()
+    smoothed_df['X_Interval'] = smoothed_df['X_Interval'].astype(dtype='int32')
+    df = df[[name_X, name_Y]]
+    return smoothed_df
+
+
+# Plot raw and smoothed scatterplots
+def scatterplots(df, name_X, name_Y, n_slices, save_name="custom_plot", return_output=False, invert_yaxis=True):
+    "https://datascienceplus.com/simple-experiments-with-smoothed-scatterplots/"
+    fig = plt.figure(figsize=(25, 25), dpi=100)
+
+    # Raw scatterplot
+    if return_output is True:
+        ax = fig.add_subplot(221)
+        plt.grid()
+        plt.scatter(df[name_X], df[name_Y])
+        plt.xlabel(name_X)
+        plt.ylabel(name_Y)
+        plt.axis('tight')
+        if invert_yaxis is True:
+            axes = plt.gca()
+            axes.invert_yaxis()
+
+    # Smoothed scatterplot
+    if return_output is True:
+        ax = fig.add_subplot(222)
+    else:
+        ax = fig.add_subplot()
+    intervals_dict = intervals_d(df, n_slices, name_X)
+    smoothed_df = smooth(df, name_X, name_Y, intervals_dict)
+    #Xmin = smoothed_df[name_X].min()
+    Xmin = 0
+    Xmax = 2000
+    #ymin = smoothed_df[name_Y].min()
+    #ymax = smoothed_df[name_Y].max()
+    ymedial = smoothed_df[name_Y].median()
+    #plt.grid()
+    axes = plt.gca()
+    axes.set_xlim([0, 500])
+    axes.set_ylim([0, 800])
+    plt.plot(smoothed_df[name_X], smoothed_df[name_Y], marker='o')
+    axes = plt.gca()
+    axes.invert_yaxis()
+    # axes.set_ylim([0, None])
+
+    plt.xlabel('Smoothed ' + name_X)
+    plt.ylabel('Smoothed ' + name_Y)
+    #plt.axis([0, 2000, 0, 700])
+    #plt.axis('tight')
+    plt.show()
+    '''
+    # Plot point numbers
+    for i in smoothed_df.index.tolist():
+        ax.annotate(str(smoothed_df['X_Interval'].iloc[i]),
+                    xy=(smoothed_df[name_X].iloc[i], smoothed_df[name_Y].iloc[i]))
+
+        # Draw medial line
+    plt.hlines(ymedial, Xmin, Xmax, color='r')
+    
+    '''
+    plt.savefig("{}.png".format(save_name), bbox_inches='tight')
+
+    if return_output is True:
+        return ax
+
+
+def create_custom_scatterplot(x, y, slices, name):
+    dft = {"X": x, "Y": y}
+    dft = pd.DataFrame(dft)
+
+    df = extract_from_dataset(dft, 'X', 'Y')
+    scatterplots(df, 'X', 'Y', n_slices=slices, save_name=name)
 
 
 def get_y_distance(pt1, pt2):
