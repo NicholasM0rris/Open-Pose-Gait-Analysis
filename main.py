@@ -37,7 +37,7 @@ def main(argv=None):
     # display.distance_overlay()
     global app  # This line saved my life. It does not work without it
     app = test_gui.QApplication([])
-    # app.aboutToQuit.connect(app.deleteLater) <- f*** this ***** line cost me at least 60 years of well being ***  *** it works without it ***
+    # app.aboutToQuit.connect(app.deleteLater) <- bad
     # gui = interface.GUI(display)
     gui = test_gui.GUI(display)
     gui.show()
