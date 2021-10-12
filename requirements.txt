@@ -1,6 +1,6 @@
 matplotlib==3.2.0
 numpy==1.18.0
-opencv-python==4.1.2.30
+opencv-python==4.2.0.32
 PyQt5==5.14.1
 PyQt5-sip==12.7.1
 
